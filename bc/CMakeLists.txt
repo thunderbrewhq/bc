@@ -16,5 +16,5 @@ target_include_directories(bc
 
 target_link_libraries(bc
     PUBLIC
-        storm
+        mem
 )
