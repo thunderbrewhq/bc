@@ -11,15 +11,15 @@ typedef int64_t Timestamp;
 
 class TimeRec {
     public:
-        int32_t   year;
-        uint32_t  month;
-        uint32_t  day;
-        uint32_t  hour;
-        uint32_t  min;
-        uint32_t  sec;
-        uint32_t  nsec;
-        uint32_t  wday;
-        uint32_t  yday;
+        int32_t  year;
+        uint32_t month;
+        uint32_t day;
+        uint32_t hour;
+        uint32_t min;
+        uint32_t sec;
+        uint32_t nsec;
+        uint32_t wday;
+        uint32_t yday;
 };
 
 } // namespace Time
