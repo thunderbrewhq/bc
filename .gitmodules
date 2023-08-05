@@ -1,6 +1,6 @@
-[submodule "lib/system"]
-	path = lib/system
-	url = https://github.com/whoahq/system
 [submodule "lib/mem"]
 	path = lib/mem
 	url = https://github.com/thunderbrewhq/mem.git
+[submodule "lib/system"]
+	path = lib/system
+	url = https://github.com/thunderbrewhq/system.git
