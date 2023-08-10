@@ -110,7 +110,7 @@ int32_t OsReadFile(HOSFILE fileHandle, void* buffer, size_t bytesToRead, size_t*
     return Blizzard::File::Read(fileHandle, buffer, bytesToRead, bytesRead);
 }
 
-int32_t OsWriteFile(HOSFILE fileHandle, void* buffer, size_t bytesToWrite, size_t* bytesWritten) {
+int32_t OsWriteFile(HOSFILE fileHandle, void* buffer, size_t bytesToWrite, size_t bytesWritten) {
     if (buffer != nullptr && bytesToWrite != 0) {
         return Blizzard::File::Write(fileHandle, buffer, bytesToWrite, bytesWritten);
     }
@@ -118,9 +118,8 @@ int32_t OsWriteFile(HOSFILE fileHandle, void* buffer, size_t bytesToWrite, size_
     return 0;
 }
 
-
 int64_t OsSetFilePointer(HOSFILE fileHandle, int64_t distanceToMove, uint32_t moveMethod) {
-    BLIZZARD_ASSERT(moveMethod <= BC_FILE_SEEK_END);
+    BLIZZARD_ASSERT(moveMethod <= 2);
 
     int64_t position;
 
