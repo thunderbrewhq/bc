@@ -17,7 +17,7 @@
 
 #define BLIZZARD_VALIDATE(x, y, ...)                      \
     if (!(x)) {                                           \
-        Blizzard::Debug::Assert(!y, __FILE__, __LINE__); \
+        Blizzard::Debug::Assert(#y, __FILE__, __LINE__); \
         return __VA_ARGS__;                               \
     }                                                     \
     (void)0
