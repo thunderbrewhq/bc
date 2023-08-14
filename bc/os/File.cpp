@@ -6,7 +6,7 @@
 HOSFILE OsCreateFile(const char* fileName, uint32_t desiredAccess, uint32_t shareMode, uint32_t createDisposition, uint32_t flagsAndAttributes, uint32_t extendedFileType) {
     // Ensure sanity
     BLIZZARD_VALIDATE(fileName, "invalid filename", nullptr);
-    BLIZZARD_VALIDATE(desiredAccess != 0, "invalid desired access");
+    BLIZZARD_VALIDATE(desiredAccess != 0, "invalid desired access", nullptr);
     BLIZZARD_VALIDATE(createDisposition <= OS_TRUNCATE_EXISTING, "invalid create disposition", nullptr);
 
     uint32_t flags;
