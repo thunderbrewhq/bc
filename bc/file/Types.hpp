@@ -1,7 +1,7 @@
 #ifndef BC_FILE_TYPES_HPP
 #define BC_FILE_TYPES_HPP
 
-#include "bc/file/system/Defines.hpp"
+#include "bc/system/file/Defines.hpp"
 #include "bc/time/Time.hpp"
 
 #if defined(WHOA_SYSTEM_WIN)

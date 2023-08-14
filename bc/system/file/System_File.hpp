@@ -2,11 +2,11 @@
 #define BC_FILE_SYSTEM_SYSTEM_FILE_HPP
 
 #include "bc/Debug.hpp"
-#include "bc/file/system/Types.hpp"
+#include "bc/system/file/Types.hpp"
 #include "bc/file/Filesystem.hpp"
 
 #if defined(WHOA_SYSTEM_WIN)
-#include "bc/file/system/win/Support.hpp"
+#include "bc/system/file/win/Support.hpp"
 #endif
 
 #include <cstdint>

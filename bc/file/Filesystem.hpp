@@ -1,7 +1,7 @@
 #ifndef BC_FILE_FILESYSTEM_HPP
 #define BC_FILE_FILESYSTEM_HPP
 
-#include "bc/file/system/Types.hpp"
+#include "bc/system/file/Types.hpp"
 #include <cstdint>
 
 namespace Blizzard {

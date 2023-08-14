@@ -4,7 +4,7 @@
 #include "bc/Time.hpp"
 #include "bc/file/Defines.hpp"
 #include "bc/file/Types.hpp"
-#include "bc/file/system/System_File.hpp"
+#include "bc/system/file/System_File.hpp"
 
 namespace Blizzard {
 namespace File {
