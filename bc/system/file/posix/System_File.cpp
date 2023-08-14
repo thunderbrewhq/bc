@@ -284,10 +284,10 @@ bool Copy(File::Filesystem* fs, Stacked::FileParms* parms) {
         size_t sz_bytesRead = 0;
         size_t sz_bytesWritten = 0;
         // Read data segment into copybuffer
-        auto status = File::Read(st_source, u8_copybuffer, sz_bytesToRead, &sz_bytesRead, 0);
+        auto status = File::Read(st_source, u8_copybuffer, sz_bytesToRead, &sz_bytesRead);
         if (status) {
             // Write copied segment to destination file
-            status = File::Write(st_destination, u8_copybuffer, sz_bytesRead, &sz_bytesWritten, 0);
+            status = File::Write(st_destination, u8_copybuffer, sz_bytesRead, &sz_bytesWritten);
         }
 
         if (!status) {
