@@ -53,7 +53,7 @@ HOSFILE OsCreateFile(const char* fileName, uint32_t desiredAccess, uint32_t shar
 
     // Open file
     Blizzard::File::StreamRecord* stream;
-    bool success = Blizzard::File::Open(fileName, flags, &stream);
+    bool success = Blizzard::File::Open(fileName, flags, stream);
     if (!success) {
         return nullptr;
     }
