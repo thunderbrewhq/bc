@@ -382,12 +382,12 @@ bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
 // parms->size also stores the result of how many bytes were actually read
 bool Read(File::Filesystem* fs, Stacked::FileParms* parms) {
     // Position is negative, so actual write position is the current seek offset of the fd.
-    return Read(parms->stream, parms->param, -1, &parms->size);
+    return System_File::Read(parms->stream, parms->param, -1, &parms->size);
 }
 
 // Specify a file position when reading from a file
 bool ReadP(File::Filesystem* fs, Stacked::FileParms* parms) {
-    return Read(parms->stream, parms->param, parms->position, &parms->size);
+    return System_File::Read(parms->stream, parms->param, parms->position, &parms->size);
 }
 
 // Remove an directory
