@@ -4,16 +4,16 @@ file(GLOB BC_SOURCES
     "os/*.cpp"
     "file/*.cpp"
     "time/*.cpp"
-    "file/system/*.cpp"
-    "time/system/*.cpp"
+    "system/*.cpp"
+    "system/file/*.cpp"
 )
 
 if(DEFINED WHOA_SYSTEM_WIN)
-    file(GLOB BC_FILE_SYSTEM_SOURCES "file/system/win/*.cpp")
+    file(GLOB BC_FILE_SYSTEM_SOURCES "system/file/win/*.cpp")
 endif()
 
 if(DEFINED WHOA_SYSTEM_LINUX OR WHOA_SYSTEM_MAC)
-    file(GLOB BC_FILE_SYSTEM_SOURCES "file/system/posix/*.cpp")
+    file(GLOB BC_FILE_SYSTEM_SOURCES "system/file/posix/*.cpp")
 endif()
 
 list(APPEND BC_SOURCES ${BC_FILE_SYSTEM_SOURCES})
