@@ -56,7 +56,7 @@ int32_t  OsSetFileAttributes(const char* fileName, uint32_t attributes);
 
 uint64_t OsGetFileSize(HOSFILE fileHandle);
 
-int32_t  OsWriteFile(HOSFILE fileHandle, void* buffer, size_t bytesToWrite, size_t bytesWritten);
+int32_t  OsWriteFile(HOSFILE fileHandle, void* buffer, size_t bytesToWrite, size_t* bytesWritten);
 
 int32_t  OsReadFile(HOSFILE fileHandle, void* buffer, size_t bytesToRead, size_t* bytesRead);
 

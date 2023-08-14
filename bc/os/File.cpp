@@ -102,7 +102,7 @@ int32_t OsSetFileAttributes(const char* fileName, uint32_t attributes) {
 }
 
 uint64_t OsGetFileSize(HOSFILE fileHandle) {
-    auto info = Blizzard::File::GetInfo(reinterpret_cast<Blizzard::File::StreamRecord*>(fileHandle));
+    auto info = Blizzard::File::GetFileInfo(reinterpret_cast<Blizzard::File::StreamRecord*>(fileHandle));
     return info->size;
 }
 
