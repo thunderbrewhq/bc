@@ -492,11 +492,11 @@ bool Write(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) 
 
 // Write parms->param data
 bool Write(File::Filesystem* fs, Stacked::FileParms* parms) {
-    return Write(parms->stream, parms->param, -1, &parms->size);
+    return System_File::Write(parms->stream, parms->param, -1, &parms->size);
 }
 
 bool WriteP(File::Filesystem* fs, Stacked::FileParms* parms) {
-    return Write(parms->stream, parms->param, parms->position, &parms->size);
+    return System_File::Write(parms->stream, parms->param, parms->position, &parms->size);
 }
 
 bool Shutdown(File::Filesystem* fs, Stacked::FileParms* parms) {

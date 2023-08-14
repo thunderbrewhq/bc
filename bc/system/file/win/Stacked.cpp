@@ -581,11 +581,11 @@ bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
 }
 
 bool Read(FileParms* parms) {
-    return Read(parms->stream, parms->param, -1, &parms->size);
+    return System_File::Read(parms->stream, parms->param, -1, &parms->size);
 }
 
 bool ReadP(FileParms* parms) {
-    return Read(parms->stream, parms->param, parms->position, &parms->size);
+    return System_File::Read(parms->stream, parms->param, parms->position, &parms->size);
 }
 
 bool RemoveDirectory(FileParms* parms) {
