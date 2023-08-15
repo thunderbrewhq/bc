@@ -20,6 +20,8 @@ bool Delete(const char* path);
 
 bool Exists(const char* path);
 
+bool Flush(StreamRecord* stream);
+
 bool IsFile(const char* path);
 
 bool IsDirectory(const char* path);

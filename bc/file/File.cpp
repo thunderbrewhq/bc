@@ -45,6 +45,20 @@ bool Exists(const char* path) {
     return status;
 }
 
+bool Flush(StreamRecord* stream) {
+    auto manager = System_File::Stacked::Manager();
+    if (!manager) {
+        return false;
+    }
+
+    System_File::Stacked::FileParms parms = {};
+    parms.stream = stream;
+
+    auto status = manager->Do(Filesystem::Call::Flush, &parms);
+
+    return status;
+}
+
 // Alias of Exists.
 bool IsFile(const char* path) {
     return Exists(path);
