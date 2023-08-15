@@ -5,8 +5,6 @@
 #include "bc/Debug.hpp"
 #include "bc/String.hpp"
 
-#include <storm/String.hpp>
-
 namespace Blizzard {
 namespace System_File {
 

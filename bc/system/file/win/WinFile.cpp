@@ -1,5 +1,5 @@
 #include "bc/file/Defines.hpp"
-#include "bc/system/file/win/Utils.hpp"
+#include "bc/system/file/win/WinFile.hpp"
 
 #include <windows.h>
 
