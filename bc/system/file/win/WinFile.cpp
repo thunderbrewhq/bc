@@ -134,7 +134,7 @@ HANDLE Open(const char* systemPath, uint32_t flags, bool nocache) {
     bool read         = flags & BC_FILE_OPEN_READ;
     bool write        = flags & BC_FILE_OPEN_WRITE;
     bool shareRead    = flags & BC_FILE_OPEN_SHARE_READ;
-    bool shareRead    = flags & BC_FILE_OPEN_SHARE_WRITE;
+    bool shareWrite   = flags & BC_FILE_OPEN_SHARE_WRITE;
     bool write        = flags & BC_FILE_OPEN_WRITE;
     bool mustNotExist = flags & BC_FILE_OPEN_MUST_NOT_EXIST;
     bool mustExist    = flags & BC_FILE_OPEN_MUST_EXIST;
@@ -159,6 +159,14 @@ HANDLE Open(const char* systemPath, uint32_t flags, bool nocache) {
     }
     if (write) {
         desiredAccess |= GENERIC_WRITE;
+    }
+
+    // Setup share policy
+    if (shareRead) {
+        shareMode |= FILE_SHARE_READ;
+    }
+    if (shareWrite) {
+        shareMode |= FILE_SHARE_WRITE;
     }
 
     // Setup create disposition
