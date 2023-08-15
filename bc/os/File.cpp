@@ -9,7 +9,7 @@ HOSFILE OsCreateFile(const char* fileName, uint32_t desiredAccess, uint32_t shar
     BLIZZARD_VALIDATE(desiredAccess != 0, "invalid desired access", nullptr);
     BLIZZARD_VALIDATE(createDisposition <= OS_TRUNCATE_EXISTING, "invalid create disposition", nullptr);
 
-    uint32_t flags;
+    uint32_t flags = 0;
 
     // Read/write flags
     if (desiredAccess & OS_GENERIC_READ) {
