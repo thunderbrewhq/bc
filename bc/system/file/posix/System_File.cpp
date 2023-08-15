@@ -275,13 +275,13 @@ bool Copy(File::Filesystem* fs, Stacked::FileParms* parms) {
     auto sz_source = File::GetFileInfo(st_source)->size;
 
     // copybuffer size upper limit is BC_FILE_SYSTEM_COPYBUFFER_SIZE
-    size_t sz_copybuffer = std::min(static_cast<size_t>(sz_source), static_cast<size_t>(BC_FILE_SYSTEM_COPYBUFFER_SIZE));
-    auto   u8_copybuffer = reinterpret_cast<uint8_t*>(Memory::Allocate(sz_copybuffer));
+    uint64_t sz_copybuffer = std::min(sz_source, static_cast<uint64_t>(BC_FILE_SYSTEM_COPYBUFFER_SIZE));
+    auto u8_copybuffer = reinterpret_cast<uint8_t*>(Memory::Allocate(sz_copybuffer));
 
     // Loop through the source file, reading segments into copybuffer
-    for (size_t index = 0; index < sz_source; index += sz_copybuffer) {
+    for (uint64_t index = 0; index < sz_source; index += sz_copybuffer) {
         // How many bytes to read
-        size_t sz_bytesToRead = sz_source - std::min(index+sz_copybuffer, sz_source);
+        size_t sz_bytesToRead = static_cast<size_t>(sz_source - std::min(index+sz_copybuffer, sz_source));
         size_t sz_bytesRead = 0;
         size_t sz_bytesWritten = 0;
         // Read data segment into copybuffer
@@ -308,6 +308,9 @@ bool Copy(File::Filesystem* fs, Stacked::FileParms* parms) {
     // close files
     File::Close(st_source);
     File::Close(st_destination);
+
+    // Success!
+    return true;
 
     // Success!
     return true;
