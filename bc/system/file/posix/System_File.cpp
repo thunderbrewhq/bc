@@ -328,6 +328,8 @@ bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
         return true;
     }
 
+    auto u8_data = reinterpret_cast<uint8_t*>(data);
+
     // in bytes, the length of the user's read operation.
     auto    size   = *bytes;
     // byte index.
@@ -343,10 +345,10 @@ bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
 
         if (offset < 0) {
             // Read relative to file pointer
-            result = read(file->filefd, data, slice);
+            result = read(file->filefd, u8_data, slice);
         } else {
             // Read absolute
-            result = pread(file->filefd, data, slice, offset);
+            result = pread(file->filefd, u8_data, slice, offset);
         }
 
         auto increment = result;
@@ -372,7 +374,7 @@ bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
             return false;
         }
 
-        data += increment;
+        u8_data += increment;
     }
 
     // How many bytes did we read
@@ -448,6 +450,8 @@ bool Write(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) 
         return true;
     }
 
+    auto u8_data = reinterpret_cast<uint8_t*>(data);
+
     // in bytes, the length of the user's write operation.
     auto    size   = *bytes;
     // byte index.
@@ -462,10 +466,10 @@ bool Write(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) 
 
         if (offset < 0) {
             // Write relative to current file pointer
-            result = write(file->filefd, data, slice);
+            result = write(file->filefd, u8_data, slice);
         } else {
             // Write at an absolute file position
-            result = pwrite(file->filefd, data, slice, offset);
+            result = pwrite(file->filefd, u8_data, slice, offset);
         }
 
         auto increment = result;
@@ -485,7 +489,7 @@ bool Write(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) 
             return false;
         }
 
-        data += increment;
+        u8_data += increment;
     }
 
     // How many bytes did we write
