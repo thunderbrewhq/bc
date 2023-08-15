@@ -598,6 +598,32 @@ bool SetAttributes(FileParms* parms) {
     return true;
 }
 
+bool SetPos(FileParms* parms) {
+    auto pos    = parms->position;
+    auto whence = parms->whence;
+    auto file   = parms->stream;
+
+    auto result = ::lseek(file->filefd, static_cast<off_t>(pos), whence);
+
+    if (result == -1) {
+        if (errno == ENOSPC) {
+            BC_FILE_SET_ERROR(BC_FILE_ERROR_NO_SPACE_ON_DEVICE);
+            return false;
+        }
+
+        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+        return false;
+    }
+
+    return true;
+}
+
+bool Delete(FileParms* parms) {
+    File::Path::QuickNative path(parms->filename);
+
+    return ::unlink(path.Str()) != -1;
+}
+
 } // namespace Stacked
 } // namespace System_File
 } // namespace Blizzard
