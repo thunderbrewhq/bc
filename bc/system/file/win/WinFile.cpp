@@ -135,7 +135,6 @@ HANDLE Open(const char* systemPath, uint32_t flags, bool nocache) {
     bool write        = flags & BC_FILE_OPEN_WRITE;
     bool shareRead    = flags & BC_FILE_OPEN_SHARE_READ;
     bool shareWrite   = flags & BC_FILE_OPEN_SHARE_WRITE;
-    bool write        = flags & BC_FILE_OPEN_WRITE;
     bool mustNotExist = flags & BC_FILE_OPEN_MUST_NOT_EXIST;
     bool mustExist    = flags & BC_FILE_OPEN_MUST_EXIST;
     bool create       = flags & BC_FILE_OPEN_CREATE;
