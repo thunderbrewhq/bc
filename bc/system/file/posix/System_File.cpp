@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
 namespace Blizzard {
 namespace System_File {
