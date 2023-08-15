@@ -274,7 +274,7 @@ bool Copy(File::Filesystem* fs, Stacked::FileParms* parms) {
     auto sz_source = File::GetFileInfo(st_source)->size;
 
     // copybuffer size upper limit is BC_FILE_SYSTEM_COPYBUFFER_SIZE
-    size_t sz_copybuffer = std::min(static_cast<size_t(sz_source), static_cast<size_t>(BC_FILE_SYSTEM_COPYBUFFER_SIZE));
+    size_t sz_copybuffer = std::min(static_cast<size_t>(sz_source), static_cast<size_t>(BC_FILE_SYSTEM_COPYBUFFER_SIZE));
     auto   u8_copybuffer = reinterpret_cast<uint8_t*>(Memory::Allocate(sz_copybuffer));
 
     // Loop through the source file, reading segments into copybuffer
