@@ -4,6 +4,10 @@
 #include <string>
 #include <cstring>
 
+#if defined(WHOA_SYSTEM_WIN)
+#include <windows.h>
+#endif
+
 // Variables
 
 char commandline[1024] = {0};
