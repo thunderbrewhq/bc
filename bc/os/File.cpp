@@ -146,3 +146,15 @@ int64_t OsSetFilePointer(HOSFILE fileHandle, int64_t distanceToMove, uint32_t mo
 void OsCloseFile(HOSFILE fileHandle) {
     Blizzard::File::Close(static_cast<Blizzard::File::StreamRecord*>(fileHandle));
 }
+
+int32_t OsSetCurrentDirectory(const char* pathName) {
+    BLIZZARD_ASSERT(pathName);
+
+    return Blizzard::File::SetWorkingDirectory(pathName);
+}
+
+int32_t OsGetCurrentDirectory(size_t pathLen, char* pathName) {
+    BLIZZARD_ASSERT(pathName);
+
+    return Blizzard::File::GetWorkingDirectory(pathName, pathLen);
+}

@@ -150,6 +150,18 @@ bool GetWorkingDirectory(char* path, size_t capacity) {
     return manager->Do(Filesystem::Call::GetWorkingDirectory, &parms);
 }
 
+bool SetWorkingDirectory(const char* path) {
+    auto manager = System_File::Stacked::Manager();
+    if (!manager) {
+        return false;
+    }
+
+    System_File::Stacked::FileParms parms = {};
+    parms.filename = path;
+
+    return manager->Do(Filesystem::Call::SetWorkingDirectory, &parms);
+}
+
 // Get file information from a stream record, returning a file info pointer owned by StreamRecord
 // The FileInfo ptr returned is invalidated after a call to File::Close(stream)
 FileInfo* GetFileInfo(StreamRecord* stream) {

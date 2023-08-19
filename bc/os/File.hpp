@@ -64,4 +64,8 @@ void     OsCloseFile(HOSFILE fileHandle);
 
 int64_t  OsSetFilePointer(HOSFILE fileHandle, int64_t distanceToMove, uint32_t moveMethod);
 
+int32_t  OsSetCurrentDirectory(const char* pathName);
+
+int32_t  OsGetCurrentDirectory(size_t pathLen, char* pathName);
+
 #endif
