@@ -68,4 +68,6 @@ int32_t  OsSetCurrentDirectory(const char* pathName);
 
 int32_t  OsGetCurrentDirectory(size_t pathLen, char* pathName);
 
+int32_t  OsCreateDirectory(const char* pathName, int32_t recursive);
+
 #endif

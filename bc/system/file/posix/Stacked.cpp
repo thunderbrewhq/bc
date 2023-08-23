@@ -50,7 +50,7 @@ bool Open(FileParms* parms) {
             flags |= O_EXCL;
         }
 
-        fd = ::open(pathNative.Str(), flags, 511);
+        fd = ::open(pathNative.Str(), flags, 0777);
     } else {
         fd = ::open(pathNative.Str(), flags);
     }
@@ -379,6 +379,8 @@ bool CreateDirectory(FileParms* parms) {
         return false;
     }
 
+    auto recursive = parms->flag != 0;
+
     char        tmp[BC_FILE_MAX_PATH] = {};
     struct stat sb;
 
@@ -399,28 +401,34 @@ bool CreateDirectory(FileParms* parms) {
         }
     }
 
-    // Loop through path and call mkdir on path elements
-    for (auto p = tmp + 1; *p != '\0'; p++) {
-        if (*p == '/') {
-            *p = 0;
-            // test path
-            if (::stat(tmp, &sb) != 0) {
-                // path does not exist, create directory
-                if (::mkdir(tmp, 511) < 0) {
+    if (!recursive) {
+        if (::mkdir(tmp, 0777) < 0) {
+            return false;
+        }
+    } else {
+        // Loop through path and call mkdir on path elements
+        for (auto p = tmp + 1; *p != '\0'; p++) {
+            if (*p == '/') {
+                *p = 0;
+                // test path
+                if (::stat(tmp, &sb) != 0) {
+                    // path does not exist, create directory
+                    if (::mkdir(tmp, 0777) < 0) {
+                        return false;
+                    }
+                } else if (!S_ISDIR(sb.st_mode)) {
+                    // not a directory
                     return false;
                 }
-            } else if (!S_ISDIR(sb.st_mode)) {
-                // not a directory
-                return false;
+                *p = '/';
             }
-            *p = '/';
         }
     }
 
     // check remaining path existence
     if (::stat(tmp, &sb) != 0) {
         // path does not exist, create directory
-        if (::mkdir(tmp, 511) < 0) {
+        if (::mkdir(tmp, 0777) < 0) {
             return false;
         }
     } else if (!S_ISDIR(sb.st_mode)) {
@@ -582,9 +590,9 @@ bool SetAttributes(FileParms* parms) {
         }
 
         if (attributes & BC_FILE_ATTRIBUTE_READONLY) {
-            status = ::chmod(path.Str(), 444);
+            status = ::chmod(path.Str(), info.st_mode & 0222);
         } else {
-            status = ::chmod(path.Str(), 511);
+            status = ::chmod(path.Str(), info.st_mode & 0777);
         }
 
         if (status != 0) {

@@ -16,6 +16,8 @@ void AddToLastErrorStack(int32_t errorcode, const char* msg, int32_t param_3);
 
 bool Copy(const char* source, const char* destination, bool overwrite);
 
+bool CreateDirectory(const char* path, bool recursive);
+
 bool Delete(const char* path);
 
 bool Exists(const char* path);

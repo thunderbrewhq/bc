@@ -374,32 +374,34 @@ bool MakeAbsolutePath(FileParms* parms) {
 }
 
 bool CreateDirectory(FileParms* parms) {
-    auto path = parms->filename;
-
+    auto path      = parms->filename;
+    auto recursive = parms->flag != 0;
     char temp[300] = {0};
     auto p = path;
 
     size_t count = 0;
 
-    while (*p != '\0') {
-        if (*p == '\\' || *p == '/') {
-            count++;
-            int32_t len = p - path;
-            if (len == 0) {
-                len = 1;
-            }
-            String::Copy(temp, path, len);
-            temp[len] = '\0';
+    if (recursive) {
+        while (*p != '\0') {
+            if (*p == '\\' || *p == '/') {
+                count++;
+                int32_t len = p - path;
+                if (len == 0) {
+                    len = 1;
+                }
+                String::Copy(temp, path, len);
+                temp[len] = '\0';
 
-            if (::GetFileAttributes(temp) == INVALID_FILE_ATTRIBUTES) {
-                if (!::CreateDirectory(temp, nullptr)) {
-                    if (::GetLastError() != ERROR_ALREADY_EXISTS) {
-                        return false;
+                if (::GetFileAttributes(temp) == INVALID_FILE_ATTRIBUTES) {
+                    if (!::CreateDirectory(temp, nullptr)) {
+                        if (::GetLastError() != ERROR_ALREADY_EXISTS) {
+                            return false;
+                        }
                     }
                 }
             }
+            p++;
         }
-        p++;
     }
 
     if (count == 0) {

@@ -263,6 +263,19 @@ bool Copy(const char* source, const char* destination, bool overwrite) {
     return manager->Do(Filesystem::Call::Copy, &parms);
 }
 
+bool CreateDirectory(const char* path, bool recursive) {
+    auto manager = System_File::Stacked::Manager();
+    if (!manager) {
+        return false;
+    }
+
+    System_File::Stacked::FileParms parms = {};
+    parms.filename = path;
+    parms.flag     = recursive;
+
+    return manager->Do(Filesystem::Call::CreateDirectory, &parms);
+}
+
 bool ProcessDirFast(const char* path, void* param, ProcessDirCallback callback, bool unkflag) {
     auto manager = System_File::Stacked::Manager();
     if (!manager) {
