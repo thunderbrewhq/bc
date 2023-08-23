@@ -44,7 +44,7 @@ void OsGetExeName(char* buffer, size_t chars) {
 }
 
 void OsPathStripFilename(char* path) {
-    auto length = String::Length(path);
+    auto length = Blizzard::String::Length(path);
 
     char* head  = &path[length-1];
 
