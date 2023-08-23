@@ -26,8 +26,9 @@ void OsGetExeName(char* buffer, size_t chars) {
 
 #if defined(WHOA_SYSTEM_MAC)
     // Darwin
-    char path[1024] = {0};
-    _NSGetExecutablePath(path, uint32_t(1024));
+    char     path[1024] = {0};
+    uint32_t bufsize    = 1024;
+    _NSGetExecutablePath(path, &bufsize);
 
     char actualPath[1024] = {0};
     realpath(path, actualPath);
