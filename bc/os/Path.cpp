@@ -2,12 +2,19 @@
 #include "bc/String.hpp"
 #include "bc/file/Path.hpp"
 
+// Win32
 #if defined(WHOA_SYSTEM_WIN)
 #include <windows.h>
 #endif
 
+// Darwin
 #if defined(WHOA_SYSTEM_MAC)
 #include <mach-o/dyld.h>
+#endif
+
+// procfs
+#if defined(WHOA_SYSTEM_LINUX)
+#include <unistd.h>
 #endif
 
 // Get the full path of the currently running .exe/ELF/Mach-O executable
