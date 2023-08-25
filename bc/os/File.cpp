@@ -5,9 +5,9 @@
 
 HOSFILE OsCreateFile(const char* fileName, uint32_t desiredAccess, uint32_t shareMode, uint32_t createDisposition, uint32_t flagsAndAttributes, uint32_t extendedFileType) {
     // Ensure sanity
-    BLIZZARD_VALIDATE(fileName, "invalid filename", nullptr);
-    BLIZZARD_VALIDATE(desiredAccess != 0, "invalid desired access", nullptr);
-    BLIZZARD_VALIDATE(createDisposition <= OS_TRUNCATE_EXISTING, "invalid create disposition", nullptr);
+    BLIZZARD_VALIDATE(fileName,                                  "invalid filename",           HOSFILE_INVALID);
+    BLIZZARD_VALIDATE(desiredAccess != 0,                        "invalid desired access",     HOSFILE_INVALID);
+    BLIZZARD_VALIDATE(createDisposition <= OS_TRUNCATE_EXISTING, "invalid create disposition", HOSFILE_INVALID);
 
     uint32_t flags = 0;
 
@@ -55,7 +55,7 @@ HOSFILE OsCreateFile(const char* fileName, uint32_t desiredAccess, uint32_t shar
     Blizzard::File::StreamRecord* stream;
     bool success = Blizzard::File::Open(fileName, flags, stream);
     if (!success) {
-        return nullptr;
+        return HOSFILE_INVALID;
     }
 
     // Set attributes
