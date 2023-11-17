@@ -387,7 +387,7 @@ bool CreateDirectory(FileParms* parms) {
     if (recursive) {
         auto p = temp_path;
         if (isalpha(p[0]) && p[1] == ':') {
-            p += 2
+            p += 2;
         }
 
         // Loop through path and call CreateDirectory on path elements
@@ -413,8 +413,8 @@ bool CreateDirectory(FileParms* parms) {
         }
     } else {
         // Create only the supplied directory.
-        if (::GetFileAttributes(temp) == INVALID_FILE_ATTRIBUTES) {
-            if (!::CreateDirectory(temp, nullptr)) {
+        if (::GetFileAttributes(temp_path) == INVALID_FILE_ATTRIBUTES) {
+            if (!::CreateDirectory(temp_path, nullptr)) {
                 if (::GetLastError() != ERROR_ALREADY_EXISTS) {
                     return false;
                 }
