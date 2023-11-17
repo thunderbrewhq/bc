@@ -374,42 +374,45 @@ bool MakeAbsolutePath(FileParms* parms) {
 }
 
 bool CreateDirectory(FileParms* parms) {
+    constexpr size_t temp_size = 300;
+
     auto path      = parms->filename;
     auto recursive = parms->flag != 0;
-    char temp[300] = {0};
-    auto p = path;
+    char temp_path[temp_size] = {0};
 
-    size_t count = 0;
+    String::Copy(temp_path, path, temp_size);
+
+    File::Path::ForceTrailingSeparator(temp_path, temp_size, '\\');
 
     if (recursive) {
-        while (*p != '\0') {
-            if (*p == '\\' || *p == '/') {
-                count++;
-                int32_t len = p - path;
-                if (len == 0) {
-                    len = 1;
-                }
-                String::Copy(temp, path, len);
-                temp[len] = '\0';
-
-                if (::GetFileAttributes(temp) == INVALID_FILE_ATTRIBUTES) {
-                    if (!::CreateDirectory(temp, nullptr)) {
-                        if (::GetLastError() != ERROR_ALREADY_EXISTS) {
-                            return false;
-                        }
-                    }
-                }
-            }
-            p++;
+        auto p = temp_path;
+        if (isalpha(p[0]) && p[1] == ':') {
+            p += 2
         }
-    }
 
-    if (count == 0) {
-        // No directories were made because there are no path separators.
-        // Make only one directory:
+        // Loop through path and call CreateDirectory on path elements
+        for (auto p = temp_path + 1; *p != '\0'; p++) {
+            if (*p == '\\') {
+                *p = 0;
 
-        String::Copy(temp, path, 300);
+                auto attributes = ::GetFileAttributes(temp_path);
 
+                // test path
+                if (attributes == INVALID_FILE_ATTRIBUTES) {
+                    // path does not exist, create directory
+                    if (!::CreateDirectory(temp_path, nullptr)) {
+                        return false;
+                    }
+                } else if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                    // not a directory
+                    return false;
+                }
+
+                *p = '\\';
+            }
+        }
+    } else {
+        // Create only the supplied directory.
         if (::GetFileAttributes(temp) == INVALID_FILE_ATTRIBUTES) {
             if (!::CreateDirectory(temp, nullptr)) {
                 if (::GetLastError() != ERROR_ALREADY_EXISTS) {
