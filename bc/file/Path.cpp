@@ -179,6 +179,8 @@ bool MakeUnivPath(const char* path, char* result, size_t capacity) {
         }
 
         result[i] = path[i] == '\\' ? '/' : path[i];
+
+        i++;
     }
 
     result[0] = '\0';
