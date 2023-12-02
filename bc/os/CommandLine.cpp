@@ -47,7 +47,7 @@ std::string CheckArgument(std::string argument) {
 }
 
 void OsSetCommandLine(int32_t argc, char** argv) {
-    int32_t i;
+    int32_t i = 0;
     std::string result = "";
 
     while (i < argc) {
