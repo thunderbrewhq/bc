@@ -3,6 +3,7 @@ file(GLOB BC_SOURCES
     "lock/*.cpp"
     "os/*.cpp"
     "file/*.cpp"
+    "file/path/*.cpp"
     "time/*.cpp"
     "system/*.cpp"
     "system/file/*.cpp"
