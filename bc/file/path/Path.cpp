@@ -50,7 +50,7 @@ QuickNative::QuickNative(const char* path) {
     auto resolvedPath = static_cast<char*>(Memory::Allocate(resolvedSize));
     resolvedPath[resolvedSize-1] = '\0';
 
-    bool wasResolved = ResolvePosixCasePath(nativepath, resolvedPath);
+    bool wasResolved = ResolvePosixCasePath(nativePath, resolvedPath);
     if (!wasResolved) {
         Memory::Free(resolvedPath);
         return;
