@@ -188,6 +188,7 @@ bool GetFileInfo(FileParms* parms) {
     }
 
     file->hasInfo = true;
+    parms->info = info;
 
     return WinFile::HandleFileInfoToBC(&byHandleInfo, info);
 }
