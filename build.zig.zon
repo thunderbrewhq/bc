@@ -1,0 +1,16 @@
+.{ .name = "bc", .version = "1.0.0", .paths = .{
+    "LICENSE",
+    "README.md",
+    "build.zig",
+    "build.zig.zon",
+    "bc",
+}, .dependencies = .{
+    .system = .{
+        .url = "https://github.com/thunderbrewhq/system/archive/refs/heads/master.zip",
+        .hash = "1220d6a6e4e2f836c1c22eb128e6c74c773ea191bfbaac02601dcb5238c2b0874182",
+    },
+    .mem = .{
+        .url = "https://github.com/thunderbrewhq/mem/archive/refs/heads/master.zip",
+        .hash = "122037f90f957dec643fe16e0092c8b971b7dd0a0f8096d00fa134e254053fbced87",
+    },
+} }

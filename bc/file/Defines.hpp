@@ -47,6 +47,6 @@
 #define BC_FILE_SET_ERROR(errorcode) ::Blizzard::File::SetLastError(static_cast<int32_t>(errorcode))
 #define BC_FILE_SET_ERROR_MSG(errorcode, pfmt, ...) \
     ::Blizzard::File::SetLastError(errorcode); \
-    ::Blizzard::File::AddToLastErrorStack(errorcode, ::Blizzard::String::QuickFormat<1024>(pfmt, __VA_ARGS__).Str(), 1)
+    ::Blizzard::File::AddToLastErrorStack(errorcode, ::Blizzard::String::QuickFormat<1024>(pfmt, ##__VA_ARGS__).Str(), 1)
 
 #endif

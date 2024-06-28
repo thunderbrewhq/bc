@@ -1,3 +1,5 @@
+#if defined(WHOA_SYSTEM_WIN)
+
 #include "bc/file/Defines.hpp"
 #include "bc/file/File.hpp"
 #include "bc/file/Path.hpp"
@@ -527,8 +529,8 @@ bool Open(FileParms* parms) {
     HANDLE handle   = WinFile::Open(pathNative.Str(), flags, nocache);
 
     if (handle == INVALID_HANDLE_VALUE) {
-        DWORD err = 0;
-        if (err = ::GetLastError()) {
+        DWORD err = ::GetLastError();
+        if (err) {
             BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_GENERIC_FAILURE, "Win32 Open %s", parms->filename);
         }
         return false;
@@ -815,3 +817,5 @@ bool WriteP(FileParms* parms) {
 /********************************
 * End of Win32 Stacked functions *
 *********************************/
+
+#endif

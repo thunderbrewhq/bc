@@ -1,3 +1,5 @@
+#if defined(WHOA_SYSTEM_WIN)
+
 #include "bc/file/Defines.hpp"
 #include "bc/system/file/win/WinFile.hpp"
 
@@ -186,3 +188,5 @@ HANDLE Open(const char* systemPath, uint32_t flags, bool nocache) {
 
 } // namespace WinFile
 } // namespace Blizzard
+
+#endif

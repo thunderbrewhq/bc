@@ -1,3 +1,5 @@
+#if defined(WHOA_SYSTEM_LINUX) || defined(WHOA_SYSTEM_MAC)
+
 #include "bc/system/file/Stacked.hpp"
 #include "bc/file/Path.hpp"
 #include "bc/Debug.hpp"
@@ -635,3 +637,5 @@ bool Delete(FileParms* parms) {
 } // namespace Stacked
 } // namespace System_File
 } // namespace Blizzard
+
+#endif

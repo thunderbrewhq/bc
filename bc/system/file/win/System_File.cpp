@@ -1,3 +1,5 @@
+#if defined(WHOA_SYSTEM_WIN)
+
 #include "bc/system/file/System_File.hpp"
 #include "bc/system/file/Stacked.hpp"
 #include "bc/file/File.hpp"
@@ -138,3 +140,5 @@ bool Shutdown(File::Filesystem* fs, Stacked::FileParms* parms) {
 
 } // namespace System_File
 } // namespace Blizzard
+
+#endif

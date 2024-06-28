@@ -1,3 +1,5 @@
+#if defined(WHOA_SYSTEM_LINUX) || defined(WHOA_SYSTEM_MAC)
+
 #include "bc/system/file/System_File.hpp"
 #include "bc/system/file/Stacked.hpp"
 #include "bc/file/Path.hpp"
@@ -518,3 +520,5 @@ bool Shutdown(File::Filesystem* fs, Stacked::FileParms* parms) {
 
 } // namespace System_File
 } // namespace Blizzard
+
+#endif
