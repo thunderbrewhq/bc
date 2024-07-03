@@ -58,6 +58,8 @@ pub fn build(b: *std.Build) void {
     .flags = &.{"-std=c++11"}
   });
 
+  bc.installHeadersDirectory(b.path("bc"), "bc", .{ .include_extensions = &.{"hpp"} });
+
   // BcTest executable
   const bc_test_exe = b.addExecutable(.{
     .name = "BcTest",

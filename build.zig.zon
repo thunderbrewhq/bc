@@ -11,6 +11,6 @@
     },
     .mem = .{
         .url = "https://github.com/thunderbrewhq/mem/archive/refs/heads/master.zip",
-        .hash = "122037f90f957dec643fe16e0092c8b971b7dd0a0f8096d00fa134e254053fbced87",
+        .hash = "12205739d6afa86c264dde5ff94fdf7f14df68122054ce899934faf972d0b11d7ac5",
     },
 } }
