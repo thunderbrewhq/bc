@@ -21,7 +21,6 @@ pub fn build(b: *std.Build) void {
   bc.linkLibrary(mem.artifact("mem"));
 
   bc.addIncludePath(b.path("."));
-  bc.addIncludePath(mem.path("."));
 
   bc.addCSourceFiles(.{
     .files = &.{
@@ -71,6 +70,7 @@ pub fn build(b: *std.Build) void {
   // Add system detection defines
   system.add_defines(bc_test_exe);
 
+  bc_test_exe.linkLibrary(mem);
   bc_test_exe.linkLibrary(bc);
 
   bc_test_exe.addIncludePath(b.path("."));
