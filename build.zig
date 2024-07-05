@@ -24,6 +24,7 @@ pub fn build(b: *std.Build) void {
 
   bc.addCSourceFiles(.{
     .files = &.{
+      "bc/file/path/Path.cpp",
       "bc/file/path/Posix.cpp",
       "bc/file/File.cpp",
       "bc/file/Filesystem.cpp",
@@ -34,8 +35,6 @@ pub fn build(b: *std.Build) void {
       "bc/os/File.cpp",
       "bc/os/Path.cpp",
 
-      "bc/system/file/path/Path.cpp",
-      "bc/system/file/path/Posix.cpp",
       "bc/system/file/posix/Stacked.cpp",
       "bc/system/file/posix/System_File.cpp",
       "bc/system/file/win/Stacked.cpp",
