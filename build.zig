@@ -34,10 +34,13 @@ pub fn build(b: *std.Build) void {
       "bc/os/File.cpp",
       "bc/os/Path.cpp",
 
+      "bc/system/file/path/Path.cpp",
+      "bc/system/file/path/Posix.cpp",
       "bc/system/file/posix/Stacked.cpp",
       "bc/system/file/posix/System_File.cpp",
       "bc/system/file/win/Stacked.cpp",
       "bc/system/file/win/System_File.cpp",
+      "bc/system/file/win/WinFile.cpp",
       "bc/system/file/Stacked.cpp",
       "bc/system/System_Debug.cpp",
       "bc/system/System_Lock.cpp",
