@@ -1,7 +1,5 @@
 #include "bc/memory/Storm.hpp"
 
-#include <cstdlib>
-
 constexpr size_t ALIGNMENT = 8;
 
 void* SMemAlloc(size_t bytes, const char* filename, int32_t linenumber, uint32_t flags) {

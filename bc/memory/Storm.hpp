@@ -2,6 +2,7 @@
 #define BC_MEMORY_STORM_HPP
 
 #include <cstdint>
+#include <cstdlib>
 
 void* SMemAlloc(size_t bytes, const char* filename, int32_t linenumber, uint32_t flags);
 
