@@ -16,10 +16,6 @@ pub fn build(b: *std.Build) void {
   // Add system detection defines
   system.add_defines(bc);
 
-  // Publicly link mem
-  const mem = b.dependency("mem", .{});
-  bc.linkLibrary(mem.artifact("mem"));
-
   bc.addIncludePath(b.path("."));
 
   bc.addCSourceFiles(.{
@@ -48,6 +44,8 @@ pub fn build(b: *std.Build) void {
 
       "bc/time/Time.cpp",
 
+      "bc/memory/Storm.cpp",
+
       "bc/Debug.cpp",
       "bc/Lock.cpp",
       "bc/Memory.cpp",
@@ -72,7 +70,6 @@ pub fn build(b: *std.Build) void {
   // Add system detection defines
   system.add_defines(bc_test_exe);
 
-  bc_test_exe.linkLibrary(mem.artifact("mem"));
   bc_test_exe.linkLibrary(bc);
 
   bc_test_exe.addIncludePath(b.path("."));

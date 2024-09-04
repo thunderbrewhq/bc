@@ -1,5 +1,5 @@
 #include "bc/Memory.hpp"
-#include <mem/Memory.hpp>
+#include "bc/memory/Storm.hpp"
 
 void* Blizzard::Memory::Allocate(uint32_t bytes) {
     return SMemAlloc(bytes, __FILE__, __LINE__, 0x0);
