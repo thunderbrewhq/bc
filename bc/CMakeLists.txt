@@ -1,5 +1,6 @@
 file(GLOB BC_SOURCES
     "*.cpp"
+    "memory/*.cpp"
     "lock/*.cpp"
     "os/*.cpp"
     "file/*.cpp"
