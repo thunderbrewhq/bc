@@ -308,12 +308,26 @@ bool write_init(Blizzard::File::StreamRecord* file, void* data, LPOVERLAPPED ove
     return write_func(file, data, overlapped, count);
 }
 
+bool Read(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+    return read_func(parms->file, parms->data, nullptr, reinterpret_cast<LPDWORD>(&parms->count));
+}
+
+bool ReadP(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+    OVERLAPPED overlapped;
+    overlapped.Offset       = static_cast<DWORD>(parms->offset & 0xFFFFFFFF);
+    overlapped.OffsetHigh   = static_cast<DWORD>((parms->offset >> 32) & 0xFFFFFFFF);
+    overlapped.Internal     = 0;
+    overlapped.InternalHigh = 0;
+    overlapped.hEvent       = nullptr;
+    return read_func(parms->file, parms->data, &overlapped, reinterpret_cast<LPDWORD>(&parms->count));
+}
+
 bool Write(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return write_func(parms->file, parms->data, nullptr, reinterpret_cast<LPDWORD>(&parms->count));
 }
 
 bool WriteP(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
-    OVERLAPPED overlapped   = {};
+    OVERLAPPED overlapped;
     overlapped.Offset       = static_cast<DWORD>(parms->offset & 0xFFFFFFFF);
     overlapped.OffsetHigh   = static_cast<DWORD>((parms->offset >> 32) & 0xFFFFFFFF);
     overlapped.Internal     = 0;

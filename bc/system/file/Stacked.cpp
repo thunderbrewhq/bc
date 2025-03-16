@@ -1,7 +1,6 @@
-
+#include "bc/system/file/Stacked.hpp"
 #include "bc/file/Filesystem.hpp"
 #include "bc/system/file/System_File.hpp"
-#include "bc/system/file/Stacked.hpp"
 #include "bc/String.hpp"
 #include "bc/Memory.hpp"
 
