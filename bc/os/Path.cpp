@@ -8,6 +8,7 @@
 
 // Darwin
 #if defined(WHOA_SYSTEM_MAC)
+#include <cstdlib>
 #include <mach-o/dyld.h>
 #endif
 
