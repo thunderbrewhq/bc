@@ -17,7 +17,16 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+
+#if defined(WHOA_SYSTEM_LINUX)
 #include <sys/vfs.h>
+#endif
+
+#if defined(WHOA_SYSTEM_MAC)
+#include <sys/param.h>
+#include <sys/mount.h>
+#endif
+
 #include <unistd.h>
 
 #define PATH(name) Blizzard::String::QuickNativePath<BC_FILE_MAX_PATH>(name).ToString()
