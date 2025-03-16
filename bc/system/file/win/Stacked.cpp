@@ -15,6 +15,8 @@
 #include <windows.h>
 #include <sddl.h>
 
+#include "bc/system/file/win/Support.hpp"
+
 #define PATH(name) Blizzard::String::QuickNativePath<300UL>(name).ToString()
 
 #define MAKEU64(high, low) static_cast<uint64_t>(high) << 32ULL | static_cast<uint64_t>(low)
@@ -473,13 +475,7 @@ bool (MakeAbsolutePath)(FileParms* parms) {
     return true;
 }
 
-// avoid clobbering
-//   System_File::Stacked::CreateDirectory
-// into
-//    System_File::Stacked::CreateDirectoryA
-#undef CreateDirectory
 bool (CreateDirectory)(FileParms* parms) {
-#define CreateDirectory CreateDirectoryA
     if (!parms->name) {
         BC_FILE_SET_ERROR(8);
         return false;
@@ -521,7 +517,7 @@ bool (CreateDirectory)(FileParms* parms) {
 
             Blizzard::String::QuickNativePath<300UL> directorypath(leadingpath);
 
-            if (::CreateDirectory(directorypath.ToString(), parms->set_acl ? &security_attr : nullptr)) {
+            if (::CreateDirectoryA(directorypath.ToString(), parms->set_acl ? &security_attr : nullptr)) {
                 if (*s == '\0') {
                     break;
                 }
@@ -547,7 +543,7 @@ bool (CreateDirectory)(FileParms* parms) {
             }
         }
     } else {
-        if (!::CreateDirectory(PATH(path), parms->set_acl ? &security_attr : nullptr)) {
+        if (!::CreateDirectoryA(PATH(path), parms->set_acl ? &security_attr : nullptr)) {
             auto last_err = ::GetLastError();
             bool result   = last_err == ERROR_ALREADY_EXISTS || last_err == ERROR_ACCESS_DENIED;
             if (path != pathbuffer) {
@@ -696,9 +692,7 @@ bool (Open)(FileParms* parms) {
     return true;
 }
 
-#undef RemoveDirectory
 bool (RemoveDirectory)(FileParms* parms) {
-#define RemoveDirectory RemoveDirectoryA
     if (parms->recurse) {
         return Blizzard::File::RemoveDirectoryAndContents(parms->name, false);
     }
@@ -712,7 +706,7 @@ bool (RemoveDirectory)(FileParms* parms) {
     auto name     = namesize > 260 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(namesize)) : namebuffer;
     Blizzard::String::MakeBackslashPath(parms->name, name, 260);
 
-    auto removed = ::RemoveDirectory(PATH(name));
+    auto removed = ::RemoveDirectoryA(PATH(name));
 
     if (name != namebuffer) {
         Blizzard::Memory::Free(name);
