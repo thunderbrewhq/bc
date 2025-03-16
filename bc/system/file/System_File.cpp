@@ -9,6 +9,10 @@
 #include <handleapi.h>
 #include <minwinbase.h>
 #include <winnt.h>
+
+#undef CreateDirectory
+#undef RemoveDirectory
+#undef GetFreeSpace
 #endif
 
 #if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
@@ -52,7 +56,6 @@ bool (GetFileInfo)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetFileInfo(parms);
 }
 
-#undef GetFreeSpace
 bool (GetFreeSpace)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetFreeSpace(parms);
 }
@@ -77,7 +80,6 @@ bool (MakeAbsolutePath)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parm
     return Stacked::MakeAbsolutePath(parms);
 }
 
-#undef CreateDirectory
 bool (CreateDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::CreateDirectory(parms);
 }
@@ -94,7 +96,6 @@ bool (Open)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Open(parms);
 }
 
-#undef RemoveDirectory
 bool (RemoveDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::RemoveDirectory(parms);
 }
