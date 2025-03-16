@@ -823,6 +823,12 @@ bool (Delete)(FileParms* parms) {
     return ::DeleteFile(PATH(name)) != 0;
 }
 
+// shutdown
+bool (Shutdown)(FileParms* parms) {
+    // ?
+    return true;
+}
+
 } // namespace Stacked
 } // namespace System_File
 
