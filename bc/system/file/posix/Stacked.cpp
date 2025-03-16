@@ -216,7 +216,7 @@ bool GetFileInfo(FileParms* parms) {
         if (::stat(name, &info) != -1) {
             auto infoptr        = parms->info;
             infoptr->size       = static_cast<uint64_t>(info.st_size);
-            auto modtime        = Blizzard::Time::FromUnixTime(info.st_mtim.tv_sec);
+            auto modtime        = Blizzard::Time::FromUnixTime(info.st_mtime.tv_sec);
             infoptr->createtime = modtime;
             infoptr->writetime  = modtime;
             infoptr->name       = nullptr;
@@ -666,7 +666,7 @@ bool Open(FileParms* parms) {
     file->info.size = info.st_size;
     // }
 
-    auto modtime = Blizzard::Time::FromUnixTime(info.st_mtim.tv_sec);
+    auto modtime = Blizzard::Time::FromUnixTime(info.st_mtime.tv_sec);
 
     file->info.createtime = modtime;
     file->info.writetime  = modtime;
