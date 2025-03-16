@@ -696,7 +696,9 @@ bool (Open)(FileParms* parms) {
     return true;
 }
 
+#undef RemoveDirectory
 bool (RemoveDirectory)(FileParms* parms) {
+#define RemoveDirectory RemoveDirectoryA
     if (parms->recurse) {
         return Blizzard::File::RemoveDirectoryAndContents(parms->name, false);
     }

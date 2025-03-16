@@ -77,6 +77,7 @@ bool (MakeAbsolutePath)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parm
     return Stacked::MakeAbsolutePath(parms);
 }
 
+#undef CreateDirectory
 bool (CreateDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::CreateDirectory(parms);
 }
@@ -93,6 +94,7 @@ bool (Open)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Open(parms);
 }
 
+#undef RemoveDirectory
 bool (RemoveDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::RemoveDirectory(parms);
 }
