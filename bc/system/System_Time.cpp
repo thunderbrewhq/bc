@@ -104,7 +104,7 @@ void TimeInit() {
     ULARGE_INTEGER ul = {};
     ul.HighPart = ft.dwHighDateTime;
     ul.LowPart  = ft.dwLowDateTime;
-    s_gmBegin = Time::FromWinFiletime(ul.QuadPart);
+    s_gmBegin = Time::FromFileTime(ul.QuadPart);
 #endif
 
     // Attempt to figure out the scale of TSC durations in real-time

@@ -9,10 +9,10 @@ namespace TimeConst {
 constexpr int64_t TimestampsPerSecond = 1000000000ULL;
 
 // amount of win32 filetime units in a second
-constexpr int64_t WinUnitsPerSecond = (TimestampsPerSecond / 100ULL);
+constexpr int64_t FileTimeUnitsPerSecond = (TimestampsPerSecond / 100LL);
 
 // the FILETIME value needed to move from 1601 epoch to the Year 2000 epoch that Blizzard prefers
-constexpr int64_t WinFiletimeY2kDifference = 125911584000000000ULL;
+constexpr uint64_t FileTimeDelta = 125911584000000000ULL;
 
 } // namespace TimeConst
 

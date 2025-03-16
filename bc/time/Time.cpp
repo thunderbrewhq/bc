@@ -1,6 +1,6 @@
 #include "bc/time/Time.hpp"
-#include "bc/time/TimeConst.hpp"
 #include "bc/system/System_Time.hpp"
+#include "bc/time/TimeConst.hpp"
 
 #if defined(WHOA_SYSTEM_WIN)
 #include <windows.h>
@@ -70,25 +70,20 @@ Timestamp FromUnixTime(int32_t unixTime) {
 }
 
 // Win32 FILETIME to y2k
-Timestamp FromWinFiletime(uint64_t winTime) {
-    if (winTime < 33677863631452242ULL) {
+Timestamp FromFileTime(uint64_t filetime) {
+    if (filetime < 33677863631452242ULL) {
         return std::numeric_limits<Timestamp>::min();
     }
 
-    if (winTime >= 218145301729837567ULL) {
-        return std::numeric_limits<Timestamp>::max();;
+    if (filetime >= 218145301729837567ULL) {
+        return std::numeric_limits<Timestamp>::max();
     }
 
-    // 1601 (Gregorian) 100-nsec
-    auto gregorian = static_cast<int64_t>(winTime);
-    // Convert filetime from 1601 epoch to 2000 epoch.
-    auto y2k = gregorian - TimeConst::WinFiletimeY2kDifference;
-    // Convert 100-nsec intervals into nsec intervals
-    return static_cast<Time::Timestamp>(y2k * 100LL);
+    return (static_cast<Time::Timestamp>(filetime) * 100LL) + ~(TimeConst::FileTimeDelta*100LL) + 1;
 }
 
-uint64_t ToWinFiletime(Timestamp y2k) {
-    return (y2k + TimeConst::WinFiletimeY2kDifference) / 100ULL;
+uint64_t ToFileTime(Timestamp y2k) {
+    return (static_cast<uint64_t>(y2k) + TimeConst::FileTimeDelta) / 100ULL;
 }
 
 int32_t GetTimeElapsed(uint32_t start, uint32_t end) {
@@ -123,7 +118,7 @@ Timestamp MakeTime(const TimeRec& date) {
 
 #if defined(WHOA_SYSTEM_WIN)
     // Win32 implementation
-    FILETIME fileTime = {};
+    FILETIME fileTime     = {};
     SYSTEMTIME systemTime = {};
 
     systemTime.wYear         = static_cast<WORD>(date.year);
@@ -135,19 +130,14 @@ Timestamp MakeTime(const TimeRec& date) {
     systemTime.wMilliseconds = 0;
 
     ::SystemTimeToFileTime(&systemTime, &fileTime);
-
-    ULARGE_INTEGER ul = {};
-    ul.HighPart = fileTime.dwHighDateTime;
-    ul.LowPart  = fileTime.dwLowDateTime;
-
-    timestamp = FromWinFiletime(ul.QuadPart);
+    timestamp = FromFileTime(static_cast<uint64_t>(fileTime.dwHighDateTime) << 32 | static_cast<uint64_t>(fileTime.dwLowDateTime));
 #endif
 
 #if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
     // UNIX implementation
     struct tm t;
 
-    t.tm_year = date.year  - 1900;
+    t.tm_year = date.year - 1900;
     t.tm_mon  = date.month - 1;
     t.tm_mday = date.day;
     t.tm_hour = date.hour;
@@ -156,7 +146,7 @@ Timestamp MakeTime(const TimeRec& date) {
 
     // Convert date into UNIX timestamp
     auto unixTime = ::timegm(&t);
-    timestamp = FromUnixTime(unixTime);
+    timestamp     = FromUnixTime(unixTime);
 #endif
     // Add nsec to result
     auto nsec = date.nsec;
@@ -182,12 +172,12 @@ void BreakTime(Timestamp timestamp, TimeRec& date) {
 #if defined(WHOA_SYSTEM_WIN)
     // Win32 implementation
     ULARGE_INTEGER ul = {};
-    ul.QuadPart = ToWinFiletime(timestamp);
+    ul.QuadPart       = ToFileTime(timestamp);
 
-    FILETIME fileTime = {};
+    FILETIME fileTime       = {};
     fileTime.dwHighDateTime = ul.HighPart;
     fileTime.dwLowDateTime  = ul.LowPart;
-    SYSTEMTIME systemTime = {};
+    SYSTEMTIME systemTime   = {};
     ::FileTimeToSystemTime(&fileTime, &systemTime);
 
     date.day  = static_cast<uint32_t>(systemTime.wDay);
@@ -201,6 +191,7 @@ void BreakTime(Timestamp timestamp, TimeRec& date) {
     bool leapYear = (date.year % 400 == 0) || (date.year % 100 != 0 && ((systemTime.wYear & 3) == 0));
 
     auto yearDay = s_monthDays[date.month] + -1 + static_cast<uint32_t>(systemTime.wDay);
+
     date.yday = yearDay;
     if (leapYear && date.month > 2) {
         date.yday++;

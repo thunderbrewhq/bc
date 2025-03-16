@@ -1,7 +1,6 @@
 #include "bc/os/CommandLine.hpp"
-#include "bc/Debug.hpp"
+#include "bc/string/Append.hpp"
 
-#include <string>
 #include <cstring>
 
 #if defined(WHOA_SYSTEM_WIN)
@@ -10,9 +9,65 @@
 
 // Variables
 
-char commandline[1024] = {0};
+#if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
+char commandline[65535];
+#endif
 
 // Functions
+
+// CUSTOM: appends a command-line argument to the buffer,
+void append_commandline(char* buffer, int32_t buffersize, const char* argument) {
+    bool escape = false;
+    if (*buffer) {
+        Blizzard::String::Append(buffer, " ", buffersize);
+
+        auto a = argument;
+        while (*a++) {
+            if (*a == ' ' || *a == '"') {
+                escape = true;
+                break;
+            }
+        }
+    } else {
+        // first argument is always quoted
+        escape = true;
+    }
+
+    if (escape) {
+        auto a = argument;
+
+        auto dst = buffer;
+        auto dstend = buffer + buffersize - 1;
+        while (dst < dstend && *dst) {
+            dst++;
+        }
+
+        if (dst < dstend) {
+            *dst++ = '"';
+        }
+
+        while (dst < dstend && *a) {
+            if (*a == '"') {
+                if (dst+1 == dstend) {
+                    break;
+                }
+                *dst++ = '\\';
+                *dst++ = '"';
+            } else {
+                *dst++ = *a;
+            }
+            a++;
+        }
+
+        if (dst < dstend) {
+            *dst++ = '"';
+        }
+
+        *dst = '\0';
+    } else {
+        Blizzard::String::Append(buffer, argument, buffersize);
+    }
+}
 
 const char* OsGetCommandLine() {
 #if defined(WHOA_SYSTEM_WIN)
@@ -24,40 +79,11 @@ const char* OsGetCommandLine() {
 #endif
 }
 
-std::string QuoteArgument(std::string argument) {
-    std::string result = "";
-
-    result += "\"";
-    result += argument;
-    result += "\"";
-
-    return result;
-}
-
-std::string CheckArgument(std::string argument) {
-    for (size_t i = 0; i < argument.length(); i++) {
-        switch (argument.at(i)) {
-        case '\"':
-        case ' ':
-            return QuoteArgument(argument);
-        }
-    }
-
-    return argument;
-}
-
-void OsSetCommandLine(int32_t argc, char** argv) {
-    int32_t i = 0;
-    std::string result = "";
-
+void OsSetCommandLine(int argc, char* argv[]) {
+#if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
+    int i = 0;
     while (i < argc) {
-        if (i > 0) {
-            result += " ";
-        }
-
-        result += CheckArgument(argv[i]);
-        i++;
+        append_commandline(commandline, sizeof(commandline), argv[i]);
     }
-
-    strncpy(commandline, result.c_str(), sizeof(commandline));
+#endif
 }

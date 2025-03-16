@@ -13,9 +13,9 @@ int32_t ToUnixTime(Timestamp timestamp);
 Timestamp FromUnixTime(int32_t unixTime);
 
 // Win32 FILETIME to y2k
-Timestamp FromWinFiletime(uint64_t winTime);
+Timestamp FromFileTime(uint64_t filetime);
 
-uint64_t ToWinFiletime(Timestamp y2k);
+uint64_t ToFileTime(Timestamp y2k);
 
 Timestamp GetTimestamp();
 

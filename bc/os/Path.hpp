@@ -1,10 +1,10 @@
 #ifndef BC_OS_PATH_HPP
 #define BC_OS_PATH_HPP
 
-#include <cstddef>
+#include <cstdint>
 
-void OsGetExePath(char* buffer, size_t chars);
+void OsGetExePath(char* buffer, uint32_t buffersize);
 
-void OsGetExeName(char* buffer, size_t chars);
+void OsGetExeName(char* buffer, uint32_t buffersize);
 
 #endif

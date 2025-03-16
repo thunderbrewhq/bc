@@ -1,6 +1,5 @@
 #include "bc/os/Path.hpp"
 #include "bc/String.hpp"
-#include "bc/file/Path.hpp"
 
 // Win32
 #if defined(WHOA_SYSTEM_WIN)
@@ -12,54 +11,54 @@
 #include <mach-o/dyld.h>
 #endif
 
-// procfs
 #if defined(WHOA_SYSTEM_LINUX)
 #include <unistd.h>
 #endif
 
 // Get the full path of the currently running .exe/ELF/Mach-O executable
-void OsGetExeName(char* buffer, size_t chars) {
+void OsGetExeName(char* buffer, uint32_t buffersize) {
 #if defined(WHOA_SYSTEM_WIN)
-    // Win32
-    GetModuleFileName(nullptr, buffer, chars);
+    ::GetModuleFileName(nullptr, buffer, buffersize);
 #endif
 
 #if defined(WHOA_SYSTEM_MAC)
-    // Darwin
-    char     path[1024] = {0};
-    uint32_t bufsize    = 1024;
-    _NSGetExecutablePath(path, &bufsize);
+    char executablepathbuffer[4096];
+    uint32_t executablepathbuffersize = sizeof(executablepathbuffer);
+    ::_NSGetExecutablePath(executable, &executablepathbuffersize);
 
-    char actualPath[1024] = {0};
-    realpath(path, actualPath);
+    char realpathbuffer[4096];
+    ::realpath(executablepathbuffer, realpathbuffer);
 
-    Blizzard::File::Path::MakeBackslashPath(actualPath, buffer, chars);
+    Blizzard::String::Copy(buffer, realpathbuffer, buffersize);
 #endif
 
 #if defined(WHOA_SYSTEM_LINUX)
     // procfs
-    char actualPath[4096] = {0};
-    readlink("/proc/self/exe", actualPath, chars);
-    Blizzard::File::Path::MakeBackslashPath(actualPath, buffer, chars);
+    if (::readlink("/proc/self/exe", buffer, buffersize) == -1) {
+        *buffer = '\0';
+    }
 #endif
 }
 
-void OsPathStripFilename(char* path) {
-    auto length = Blizzard::String::Length(path);
-
-    char* head  = &path[length-1];
-
-    while ((head != (path-1)) && (*head != '\0')) {
-        if (*head == '\\') {
-            *(head + 1) = '\0';
-            break;
+void OsPathStripFilename(char* name) {
+    auto n = name;
+    while (*n) {
+        n++;
+    }
+    if (n > name) {
+        while (n > name) {
+            if (*n == '/' || *n == '\\') {
+                break;
+            }
+            n--;
         }
-        head--;
+
+        *n = '\0';
     }
 }
 
 // Get the directory containing the currently running executable
-void OsGetExePath(char* dest, size_t chars) {
-    OsGetExeName(dest, chars);
-    OsPathStripFilename(dest);
+void OsGetExePath(char* buffer, uint32_t buffersize) {
+    OsGetExeName(buffer, buffersize);
+    OsPathStripFilename(buffer);
 }

@@ -1,24 +1,17 @@
 file(GLOB BC_SOURCES
     "*.cpp"
-    "memory/*.cpp"
-    "lock/*.cpp"
-    "os/*.cpp"
+    "string/*.cpp"
     "file/*.cpp"
-    "file/path/*.cpp"
-    "time/*.cpp"
+    "lock/*.cpp"
+    "memory/*.cpp"
+    "os/*.cpp"
+    "os/file/*.cpp"
     "system/*.cpp"
     "system/file/*.cpp"
+    "system/file/posix/*.cpp"
+    "system/file/win/*.cpp"
+    "time/*.cpp"
 )
-
-if(DEFINED WHOA_SYSTEM_WIN)
-    file(GLOB BC_FILE_SYSTEM_SOURCES "system/file/win/*.cpp")
-endif()
-
-if(DEFINED WHOA_SYSTEM_LINUX OR WHOA_SYSTEM_MAC)
-    file(GLOB BC_FILE_SYSTEM_SOURCES "system/file/posix/*.cpp")
-endif()
-
-list(APPEND BC_SOURCES ${BC_FILE_SYSTEM_SOURCES})
 
 add_library(bc STATIC
     ${BC_SOURCES}
