@@ -1,4 +1,4 @@
-#include "bc/file/Flush.cpp"
+#include "bc/file/Flush.hpp"
 #include "bc/system/file/Stacked.hpp"
 
 namespace Blizzard {
