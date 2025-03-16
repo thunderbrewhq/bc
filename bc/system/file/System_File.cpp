@@ -303,7 +303,7 @@ bool read_init(Blizzard::File::StreamRecord* file, void* data, LPOVERLAPPED over
     return read_func(file, data, overlapped, count);
 }
 
-bool write_init(Blizzard::File::StreamRecord* file, void* data, LPOVERLAPPED overlapped, LPDWORD count) {
+bool write_init(Blizzard::File::StreamRecord* file, const void* data, LPOVERLAPPED overlapped, LPDWORD count) {
     Blizzard::Lock::DoOnce(s_write_init, detect_io_mode, nullptr);
     return write_func(file, data, overlapped, count);
 }

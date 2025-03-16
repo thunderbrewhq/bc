@@ -1,3 +1,4 @@
+#include "bc/file/Defines.hpp"
 #if defined(WHOA_SYSTEM_WIN)
 
 #include "bc/system/file/Stacked.hpp"
@@ -210,6 +211,11 @@ bool Close(FileParms* parms) {
     Blizzard::Memory::Free(file);
 
     return true;
+}
+
+bool Create(FileParms* parms) {
+    BC_FILE_SET_ERROR(9);
+    return false;
 }
 
 bool GetWorkingDirectory(FileParms* parms) {
