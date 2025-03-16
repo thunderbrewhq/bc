@@ -1,5 +1,6 @@
 #if defined(WHOA_SYSTEM_WIN)
 
+#include "bc/system/file/System_File.hpp"
 #include "bc/system/file/Stacked.hpp"
 #include "bc/string/QuickFormat.hpp"
 #include "bc/File.hpp"

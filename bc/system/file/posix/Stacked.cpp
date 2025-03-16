@@ -2,6 +2,7 @@
 #include "bc/file/Defines.hpp"
 #if defined(WHOA_SYSTEM_LINUX) || defined(WHOA_SYSTEM_MAC)
 
+#include "bc/system/file/System_File.hpp"
 #include "bc/system/file/Stacked.hpp"
 #include "bc/Debug.hpp"
 #include "bc/File.hpp"
