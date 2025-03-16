@@ -24,7 +24,7 @@ void OsGetExeName(char* buffer, uint32_t buffersize) {
 #if defined(WHOA_SYSTEM_MAC)
     char executablepathbuffer[4096];
     uint32_t executablepathbuffersize = sizeof(executablepathbuffer);
-    ::_NSGetExecutablePath(executable, &executablepathbuffersize);
+    ::_NSGetExecutablePath(executablepathbuffer, &executablepathbuffersize);
 
     char realpathbuffer[4096];
     ::realpath(executablepathbuffer, realpathbuffer);
