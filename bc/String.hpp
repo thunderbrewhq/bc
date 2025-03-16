@@ -4,6 +4,7 @@
 #include "bc/string/Append.hpp"
 #include "bc/string/Copy.hpp"
 #include "bc/string/Defines.hpp"
+#include "bc/string/Equal.hpp"
 #include "bc/string/Find.hpp"
 #include "bc/string/Format.hpp"
 #include "bc/string/Length.hpp"
