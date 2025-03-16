@@ -1,6 +1,5 @@
 #if defined(WHOA_SYSTEM_WIN)
 
-#include "bc/system/file/System_File.hpp"
 #include "bc/system/file/Stacked.hpp"
 #include "bc/string/QuickFormat.hpp"
 #include "bc/File.hpp"
@@ -196,13 +195,13 @@ namespace Stacked {
 
 // begin stacked file functions
 
-bool (SetWorkingDirectory)(FileParms* parms) {
+bool SetWorkingDirectory(FileParms* parms) {
     BLIZZARD_ASSERT(parms->name);
 
     return ::SetCurrentDirectory(PATH(parms->name)) != 0;
 }
 
-bool (Close)(FileParms* parms) {
+bool Close(FileParms* parms) {
     auto file = parms->file;
     if (file->filehandle != INVALID_HANDLE_VALUE) {
         ::CloseHandle(file->filehandle);
@@ -213,7 +212,7 @@ bool (Close)(FileParms* parms) {
     return true;
 }
 
-bool (GetWorkingDirectory)(FileParms* parms) {
+bool GetWorkingDirectory(FileParms* parms) {
     if (!parms->buffer || !parms->buffersize) {
         // System_File::FileError(8)
         BC_FILE_SET_ERROR(8);
@@ -228,7 +227,7 @@ bool (GetWorkingDirectory)(FileParms* parms) {
     return true;
 }
 
-bool (ProcessDirFast)(FileParms* parms) {
+bool ProcessDirFast(FileParms* parms) {
     char dirfindpattern[512];
     Blizzard::String::Format(dirfindpattern, 512, "%s\\*", parms->name);
 
@@ -267,7 +266,7 @@ bool (ProcessDirFast)(FileParms* parms) {
     return false;
 }
 
-bool (Exists)(FileParms* parms) {
+bool Exists(FileParms* parms) {
     char name[BC_FILE_MAX_PATH];
     if (parms->name) {
         Blizzard::String::MakeBackslashPath(parms->name, name, sizeof(name));
@@ -286,7 +285,7 @@ bool (Exists)(FileParms* parms) {
     return true;
 }
 
-bool (Flush)(FileParms* parms) {
+bool Flush(FileParms* parms) {
     auto file = parms->file;
 
     if (file->filehandle == INVALID_HANDLE_VALUE) {
@@ -297,7 +296,7 @@ bool (Flush)(FileParms* parms) {
     return ::FlushFileBuffers(file->filehandle) != 0;
 }
 
-bool (GetFileInfo)(FileParms* parms) {
+bool GetFileInfo(FileParms* parms) {
     if (parms->name) {
         WIN32_FILE_ATTRIBUTE_DATA fileinfo;
         if (!::GetFileAttributesEx(PATH(parms->name), GetFileExInfoStandard, &fileinfo)) {
@@ -339,7 +338,7 @@ bool (GetFileInfo)(FileParms* parms) {
     return false;
 }
 
-bool (GetFreeSpace)(FileParms* parms) {
+bool GetFreeSpace(FileParms* parms) {
     auto name = parms->name;
     if (name == nullptr || *name == '\0') {
         BC_FILE_SET_ERROR(8);
@@ -376,7 +375,7 @@ bool (GetFreeSpace)(FileParms* parms) {
     return true;
 }
 
-bool (GetPos)(FileParms* parms) {
+bool GetPos(FileParms* parms) {
     auto file = parms->file;
 
     if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
@@ -395,7 +394,7 @@ bool (GetPos)(FileParms* parms) {
     return true;
 }
 
-bool (GetRootChars)(FileParms* parms) {
+bool GetRootChars(FileParms* parms) {
     char pathbuffer[256];
     auto pathsize = Blizzard::String::Length(parms->name) + 1;
     auto path     = pathsize > 256 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(pathsize)) : pathbuffer;
@@ -429,7 +428,7 @@ bool (GetRootChars)(FileParms* parms) {
     return true;
 }
 
-bool (IsAbsolutePath)(FileParms* parms) {
+bool IsAbsolutePath(FileParms* parms) {
     auto path = parms->name;
 
     auto first = path[0];
@@ -447,7 +446,7 @@ bool (IsAbsolutePath)(FileParms* parms) {
     return false;
 }
 
-bool (IsReadOnly)(FileParms* parms) {
+bool IsReadOnly(FileParms* parms) {
     if (!parms->name) {
         BC_FILE_SET_ERROR(8);
         return false;
@@ -461,7 +460,7 @@ bool (IsReadOnly)(FileParms* parms) {
     return dwFileAttributes & FILE_ATTRIBUTE_READONLY;
 }
 
-bool (MakeAbsolutePath)(FileParms* parms) {
+bool MakeAbsolutePath(FileParms* parms) {
     if (!parms->name) {
         BC_FILE_SET_ERROR(8);
         return false;
@@ -476,7 +475,7 @@ bool (MakeAbsolutePath)(FileParms* parms) {
     return true;
 }
 
-bool (CreateDirectory)(FileParms* parms) {
+bool CreateDirectory(FileParms* parms) {
     if (!parms->name) {
         BC_FILE_SET_ERROR(8);
         return false;
@@ -560,7 +559,7 @@ bool (CreateDirectory)(FileParms* parms) {
     return true;
 }
 
-bool (Move)(FileParms* parms) {
+bool Move(FileParms* parms) {
     char src[BC_FILE_MAX_PATH];
     char dst[BC_FILE_MAX_PATH];
     if (parms->name) {
@@ -576,7 +575,7 @@ bool (Move)(FileParms* parms) {
     return ::MoveFile(PATH(src), PATH(dst)) != 0;
 }
 
-bool (Copy)(FileParms* parms) {
+bool Copy(FileParms* parms) {
     char srcname[BC_FILE_MAX_PATH];
     char dstname[BC_FILE_MAX_PATH];
     if (parms->name) {
@@ -635,7 +634,7 @@ bool (Copy)(FileParms* parms) {
     return result;
 }
 
-bool (Open)(FileParms* parms) {
+bool Open(FileParms* parms) {
     char name[BC_FILE_MAX_PATH];
     if (parms->name) {
         Blizzard::String::MakeBackslashPath(parms->name, name, BC_FILE_MAX_PATH);
@@ -693,7 +692,7 @@ bool (Open)(FileParms* parms) {
     return true;
 }
 
-bool (RemoveDirectory)(FileParms* parms) {
+bool RemoveDirectory(FileParms* parms) {
     if (parms->recurse) {
         return Blizzard::File::RemoveDirectoryAndContents(parms->name, false);
     }
@@ -716,7 +715,7 @@ bool (RemoveDirectory)(FileParms* parms) {
     return removed != 0;
 }
 
-bool (SetCacheMode)(FileParms* parms) {
+bool SetCacheMode(FileParms* parms) {
     auto file = parms->file;
 
     parms->mode |= ~(Blizzard::File::Mode::nocache);
@@ -741,7 +740,7 @@ bool (SetCacheMode)(FileParms* parms) {
     return true;
 }
 
-bool (SetEOF)(FileParms* parms) {
+bool SetEOF(FileParms* parms) {
     auto file = parms->file;
 
     int64_t offset;
@@ -756,7 +755,7 @@ bool (SetEOF)(FileParms* parms) {
     return status != 0;
 }
 
-bool (SetAttributes)(FileParms* parms) {
+bool SetAttributes(FileParms* parms) {
     if (parms->setinfo & BC_SYSTEM_FILE_INFO_TIMES) {
         auto info = parms->info;
 
@@ -784,7 +783,7 @@ bool (SetAttributes)(FileParms* parms) {
     return parms->setinfo == 0;
 }
 
-bool (SetPos)(FileParms* parms) {
+bool SetPos(FileParms* parms) {
     auto file = parms->file;
 
     if (file->filehandle == INVALID_HANDLE_VALUE) {
@@ -810,7 +809,7 @@ bool (SetPos)(FileParms* parms) {
     return true;
 }
 
-bool (Delete)(FileParms* parms) {
+bool Delete(FileParms* parms) {
     char name[BC_FILE_MAX_PATH];
     if (parms->name) {
         Blizzard::String::MakeBackslashPath(parms->name, name, BC_FILE_MAX_PATH);
@@ -821,7 +820,7 @@ bool (Delete)(FileParms* parms) {
 }
 
 // shutdown
-bool (Shutdown)(FileParms* parms) {
+bool Shutdown(FileParms* parms) {
     // ?
     return true;
 }

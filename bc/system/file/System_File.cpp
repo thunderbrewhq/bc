@@ -22,105 +22,105 @@ namespace System_File {
 
 bool s_EnableFileLocks = false;
 
-bool (SetWorkingDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool SetWorkingDirectory(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::SetWorkingDirectory(parms);
 }
 
-bool (Close)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Close(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Close(parms);
 }
 
-bool (Create)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Create(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Create(parms);
 }
 
-bool (GetWorkingDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool GetWorkingDirectory(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetWorkingDirectory(parms);
 }
 
-bool (ProcessDirFast)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool ProcessDirFast(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::ProcessDirFast(parms);
 }
 
-bool (Exists)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Exists(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Exists(parms);
 }
 
-bool (Flush)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Flush(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Flush(parms);
 }
 
-bool (GetFileInfo)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool GetFileInfo(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetFileInfo(parms);
 }
 
-bool (GetFreeSpace)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool GetFreeSpace(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetFreeSpace(parms);
 }
 
-bool (GetPos)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool GetPos(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetPos(parms);
 }
 
-bool (GetRootChars)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool GetRootChars(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::GetRootChars(parms);
 }
 
-bool (IsAbsolutePath)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool IsAbsolutePath(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::IsAbsolutePath(parms);
 }
 
-bool (IsReadOnly)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool IsReadOnly(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::IsReadOnly(parms);
 }
 
-bool (MakeAbsolutePath)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool MakeAbsolutePath(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::MakeAbsolutePath(parms);
 }
 
-bool (CreateDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool CreateDirectory(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::CreateDirectory(parms);
 }
 
-bool (Move)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Move(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Move(parms);
 }
 
-bool (Copy)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Copy(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Copy(parms);
 }
 
-bool (Open)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Open(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Open(parms);
 }
 
-bool (RemoveDirectory)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool RemoveDirectory(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::RemoveDirectory(parms);
 }
 
-bool (SetCacheMode)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool SetCacheMode(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::SetCacheMode(parms);
 }
 
-bool (SetEOF)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool SetEOF(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::SetEOF(parms);
 }
 
-bool (SetAttributes)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool SetAttributes(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::SetAttributes(parms);
 }
 
-bool (SetPos)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool SetPos(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::SetPos(parms);
 }
 
-bool (Delete)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Delete(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return Stacked::Delete(parms);
 }
 
 #if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
 
-bool (Read)(Blizzard::File::StreamRecord* file, void* data, int64_t offset, int32_t* count) {
+bool Read(Blizzard::File::StreamRecord* file, void* data, int64_t offset, int32_t* count) {
     // file must be open to read
     BLIZZARD_ASSERT(file != nullptr && file->filefd != -1);
 
@@ -153,15 +153,15 @@ bool (Read)(Blizzard::File::StreamRecord* file, void* data, int64_t offset, int3
     return n == 0;
 }
 
-bool (Read)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Read(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return System_File::Read(parms->file, parms->data, -1, &parms->count);
 }
 
-bool (ReadP)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool ReadP(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return System_File::Read(parms->file, parms->data, parms->offset, &parms->count);
 }
 
-bool (Write)(Blizzard::File::StreamRecord* file, const void* data, int64_t offset, int32_t* count) {
+bool Write(Blizzard::File::StreamRecord* file, const void* data, int64_t offset, int32_t* count) {
     // file descriptor must be initialized
     BLIZZARD_ASSERT(file != nullptr && file->filefd != -1);
 
@@ -192,11 +192,11 @@ bool (Write)(Blizzard::File::StreamRecord* file, const void* data, int64_t offse
     return n == 0;
 }
 
-bool (Write)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool Write(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return System_File::Write(parms->file, parms->data, -1LL, &parms->count);
 }
 
-bool (WriteP)(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
+bool WriteP(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
     return System_File::Write(parms->file, parms->data, parms->offset, &parms->count);
 }
 
