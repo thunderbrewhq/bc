@@ -6,6 +6,10 @@
 #include "bc/file/Filesystem.hpp"
 #include <cstdint>
 
+#if defined(WHOA_SYSTEM_WIN)
+#include "bc/system/file/win/Support.hpp"
+#endif
+
 namespace System_File {
 
 extern bool s_EnableFileLocks;

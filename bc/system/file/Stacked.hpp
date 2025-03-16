@@ -7,6 +7,10 @@
 
 #include <cstdint>
 
+#if defined(WHOA_SYSTEM_WIN)
+#include "bc/system/file/win/Support.hpp"
+#endif
+
 namespace System_File {
 namespace Stacked {
 

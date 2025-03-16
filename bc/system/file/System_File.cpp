@@ -1,8 +1,8 @@
+#include "bc/system/file/Stacked.hpp"
 #include "bc/system/file/System_File.hpp"
 #include "bc/Lock.hpp"
 #include "bc/File.hpp"
 #include "bc/String.hpp"
-#include "bc/system/file/Stacked.hpp"
 #include "bc/system/file/Types.hpp"
 
 #if defined(WHOA_SYSTEM_WIN)
@@ -10,9 +10,7 @@
 #include <minwinbase.h>
 #include <winnt.h>
 
-#undef CreateDirectory
-#undef RemoveDirectory
-#undef GetFreeSpace
+#include "bc/system/file/win/Support.hpp"
 #endif
 
 #if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)

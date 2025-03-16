@@ -1,5 +1,6 @@
 #if defined(WHOA_SYSTEM_WIN)
 
+#include "bc/system/file/Stacked.hpp"
 #include "bc/string/QuickFormat.hpp"
 #include "bc/File.hpp"
 #include "bc/Debug.hpp"
@@ -7,7 +8,6 @@
 #include "bc/String.hpp"
 #include "bc/Unicode.hpp"
 #include "bc/File.hpp"
-#include "bc/system/file/Stacked.hpp"
 #include "bc/time/Time.hpp"
 
 #include <algorithm>
