@@ -3,20 +3,17 @@
 
 #include "bc/Debug.hpp"
 #include "bc/file/Types.hpp"
-
 #include <cstdint>
-
-namespace Blizzard {
 
 namespace System_File {
 
 class FileError {
     public:
-        // Error codes can be any value, even negative.
-        // Look for common error codes in Defines.hpp
-        // on POSIX, errorcode could be a POSIX error offset +100.
-        int32_t                  errorcode;
-        Debug::ErrorStackRecord* stack;
+    // Error codes can be any value, even negative.
+    // Look for common error codes in Defines.hpp
+    // on POSIX, errorcode could be a POSIX error offset +100.
+    int32_t errorcode;
+    Blizzard::Debug::ErrorStackRecord* stack;
 };
 
 namespace Stacked {
@@ -25,46 +22,31 @@ namespace Stacked {
 // so all fs calls can use one signature
 class FileParms {
     public:
-        // The byte offset to the filesystem action func of this call.
-        uintptr_t                 offset;
-        // The "source" file object
-        const char*               filename;
-        // The "destination" file object, or just a user parameter.
-        union {
-            void*                 param;
-            const char*           destination;
-        };
-        // Supplies the handle/fd of a file
-        File::StreamRecord*       stream;
-        // Flag or boolean field.
-        uint32_t                  flag;
-        // Stores additional status bits.
-        uint32_t                  mode;
-        File::FileInfo*           info;
-        // Beginning and end used when querying slices: such as GetRootChars
-        union {
-            // The specified position of the interaction
-            int64_t               position;
-            int64_t               beginning;
-        };
-        union {
-            int32_t               whence;
-            int64_t               end;
-        };
-        union {
-            // size_t is not guaranteed to be 64-bit
-            // size64 is included here as well to allow interactions on files > 4 GB in size.
-            uint64_t              size64;
-            size_t                size;
-        };
-        File::ProcessDirCallback  callback;
-        char*                     directory;
-        size_t                    directorySize;
+    uint32_t op;
+    const char* name;
+    const char* newname;
+    Blizzard::File::StreamRecord* file;
+    Blizzard::File::FileInfo* info;
+    Blizzard::File::FileInfo noinfo;
+    uint32_t setinfo;
+    uint32_t getinfo;
+    int32_t mode;
+    void* data;
+    int32_t count;
+    int64_t offset;
+    int32_t whence;
+    char* buffer;
+    int32_t buffersize;
+    bool recurse;
+    bool canonicalize;
+    void* dirwalkparam;
+    Blizzard::File::ProcessDirCallback dirwalkcallback;
+    bool overwrite;
+    bool set_acl;
 };
 
 } // namespace Stacked
 
 } // namespace System_File
-} // namespace Blizzard
 
 #endif

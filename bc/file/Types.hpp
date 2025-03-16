@@ -5,7 +5,7 @@
 #include "bc/time/Time.hpp"
 
 #if defined(WHOA_SYSTEM_WIN)
-#include <windows.h>
+typedef void* HANDLE;
 #endif
 
 #include <cstddef>
@@ -15,59 +15,57 @@ namespace File {
 
 // Types
 
-// Used by SetCacheMode
 enum Mode {
-    setperms = 4,
-    settimes = 16,
-    nocache  = 64
+    read         = 0x0001,
+    write        = 0x0002,
+    shareread    = 0x0004,
+    sharewrite   = 0x0008,
+    nocache      = 0x0040,
+    temporary    = 0x0080,
+    truncate     = 0x0100,
+    append       = 0x0200,
+    create       = 0x0400,
+    mustnotexist = 0x0800,
+    mustexist    = 0x1000
 };
 
 class FileInfo {
     public:
-        Time::TimeRec*  time;
-        // The device ID storing this file.
-        uint32_t        device;
-        // Tell if a file is a directory
-        // read-only, hidden
-        // See file/Defines.hpp for more
-        uint32_t        attributes;
-        // Size in bytes
-        uint64_t        size;
-        // Note that these are Y2K time, not Unix
-        Time::Timestamp accessTime;
-        Time::Timestamp modificationTime;
-        Time::Timestamp attributeModificationTime;
+    const char* name;
+    int32_t unk04;
+    uint64_t size;
+    int32_t attributes;
+    Time::Timestamp createtime;
+    Time::Timestamp writetime;
+    Time::Timestamp accesstime;
+    int32_t filetype;
+    int32_t normal;
 };
 
 class ProcessDirParms {
     public:
-        const char* root            = nullptr;
-        const char* item            = nullptr;
-        bool        itemIsDirectory = false;
-        void*       param           = nullptr;
+    const char* dir;
+    const char* item;
+    void* param;
+    bool isdir;
 };
 
 typedef bool (*ProcessDirCallback)(const ProcessDirParms&);
 
 class StreamRecord {
     public:
-        static constexpr size_t s_padPath = 80;
-
 #if defined(WHOA_SYSTEM_WIN)
-        HANDLE      filehandle;
+    HANDLE filehandle;
 #endif
 #if defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
-        // File descriptor
-        int32_t     filefd;
+    int filefd;
 #endif
-        // Open flags
-        uint32_t    flags;
-        // Determines whether info object is initialized
-        bool        hasInfo;
-        FileInfo    info;
-        // The path of the opened file.
-        char        path[s_padPath];
-
+    int32_t mode;
+    bool haveinfo;
+    uint32_t unk0C;
+    Blizzard::File::FileInfo info;
+    int32_t* unk48;
+    const char* name;
 };
 
 } // namespace File

@@ -1,105 +1,262 @@
 #if defined(WHOA_SYSTEM_WIN)
 
-#include "bc/file/Defines.hpp"
-#include "bc/file/File.hpp"
-#include "bc/file/Path.hpp"
-#include "bc/system/file/Stacked.hpp"
-#include "bc/system/file/win/WinFile.hpp"
+#include "bc/string/QuickFormat.hpp"
+#include "bc/File.hpp"
 #include "bc/Debug.hpp"
 #include "bc/Memory.hpp"
 #include "bc/String.hpp"
+#include "bc/Unicode.hpp"
+#include "bc/File.hpp"
+#include "bc/system/file/Stacked.hpp"
+#include "bc/time/Time.hpp"
 
 #include <algorithm>
 
-/********************************
-* Begin Win32 Stacked functions *
-*********************************/
+#include <windows.h>
+#include <sddl.h>
 
-namespace Blizzard {
+#define PATH(name) Blizzard::String::QuickNativePath<300UL>(name).ToString()
+
+#define MAKEU64(high, low) static_cast<uint64_t>(high) << 32ULL | static_cast<uint64_t>(low)
+
+#define BREAKU64(qw, high, low)             \
+    high = static_cast<uint32_t>(qw >> 32); \
+    low  = static_cast<uint32_t>(qw)
+
+#define BREAKFILEPOINTER(qw, high, low)  \
+     high = static_cast<LONG>(qw >> 32); \
+     low  = static_cast<LONG>(qw)
+
 namespace System_File {
+
+// converts file name from local Windows format into UTF-8
+void FromNativeName(char* buffer, int32_t buffersize, const char* name) {
+    uint16_t widenamebuffer[300];
+    auto len      = name ? Blizzard::String::Length(name) : 0;
+    auto widename = len + 1 > 300
+                        ? static_cast<uint16_t*>(Blizzard::Memory::Allocate(2 * (len + 1)))
+                        : widenamebuffer;
+
+    widename[MultiByteToWideChar(CP_ACP, 0, name, len, reinterpret_cast<LPWSTR>(widename), len + 1)] = 0;
+
+    Blizzard::Unicode::ConvertUTF16to8(reinterpret_cast<uint8_t*>(buffer), buffersize, widenamebuffer, 0xFFFFFFFF, nullptr, nullptr);
+
+    if (widenamebuffer != widename) {
+        Blizzard::Memory::Free(widename);
+    }
+}
+
+// translate Win32 file bits into Blizzard file bits
+uint32_t FromNativeAttributes(DWORD a) {
+    uint32_t b = 0;
+    if (a & FILE_ATTRIBUTE_READONLY) {
+        b |= BC_FILE_ATTRIBUTE_READONLY;
+    }
+
+    if (a & FILE_ATTRIBUTE_HIDDEN) {
+        b |= BC_FILE_ATTRIBUTE_HIDDEN;
+    }
+
+    if (a & FILE_ATTRIBUTE_SYSTEM) {
+        b |= BC_FILE_ATTRIBUTE_SYSTEM;
+    }
+
+    if (a & FILE_ATTRIBUTE_ARCHIVE) {
+        b |= BC_FILE_ATTRIBUTE_ARCHIVE;
+    }
+
+    if (a & FILE_ATTRIBUTE_TEMPORARY) {
+        b |= BC_FILE_ATTRIBUTE_TEMPORARY;
+    }
+
+    if (a & FILE_ATTRIBUTE_DIRECTORY) {
+        b |= BC_FILE_ATTRIBUTE_DIRECTORY;
+    }
+
+    if ((a & FILE_ATTRIBUTE_NORMAL) != 0 || (a & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+        b |= BC_FILE_ATTRIBUTE_NORMAL;
+    }
+
+    return b;
+}
+
+// translate Blizzard file attribute bits into Win32 attribute bits.
+DWORD ToNativeAttributes(uint32_t a) {
+    DWORD b = 0;
+
+    if (a & BC_FILE_ATTRIBUTE_READONLY) {
+        b |= FILE_ATTRIBUTE_READONLY;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_HIDDEN) {
+        b |= FILE_ATTRIBUTE_HIDDEN;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_SYSTEM) {
+        b |= FILE_ATTRIBUTE_SYSTEM;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_ARCHIVE) {
+        b |= FILE_ATTRIBUTE_ARCHIVE;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_TEMPORARY) {
+        b |= FILE_ATTRIBUTE_TEMPORARY;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_NORMAL) {
+        b |= FILE_ATTRIBUTE_NORMAL;
+    }
+
+    if (a & BC_FILE_ATTRIBUTE_DIRECTORY) {
+        b |= FILE_ATTRIBUTE_DIRECTORY;
+    }
+
+    return b;
+}
+
+// convert FILETIME (two 32-bit values) into 64-bit unsigned integer
+inline uint64_t MakeFileTime(FILETIME ft) {
+    return MAKEU64(ft.dwHighDateTime, ft.dwLowDateTime);
+}
+
+// convert 64-bit unsigned integer into FILETIME (two 32-bit values)
+inline FILETIME BreakFileTime(uint64_t qw) {
+    FILETIME ft;
+    BREAKU64(qw, ft.dwHighDateTime, ft.dwLowDateTime);
+    return ft;
+}
+
+void GetFileInfoByFile(Blizzard::File::StreamRecord* file) {
+    if (!file->haveinfo) {
+        file->haveinfo = false;
+
+        DWORD filesizehigh;
+        auto filesize = static_cast<uint64_t>(GetFileSize(file->filehandle, &filesizehigh));
+
+        if (filesize == INVALID_FILE_SIZE && GetLastError()) {
+            return;
+        }
+
+        auto info = &file->info;
+
+        // TODO: ??????
+        if (!file->unk48 || !*file->unk48) {
+            info->size = MAKEU64(filesizehigh, filesize);
+        }
+
+        WIN32_FILE_ATTRIBUTE_DATA fileinfo;
+        if (::GetFileAttributesEx(PATH(file->name), GetFileExInfoStandard, &fileinfo)) {
+
+            info->createtime   = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
+            info->writetime  = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastWriteTime));
+            info->accesstime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastAccessTime));
+
+            info->attributes = FromNativeAttributes(fileinfo.dwFileAttributes);
+
+            info->normal = info->attributes & BC_FILE_ATTRIBUTE_NORMAL != 0;
+
+            if (fileinfo.dwFileAttributes == 0xFFFFFFFF) {
+                info->filetype = 0;
+            } else {
+                info->filetype = ((info->attributes & BC_FILE_ATTRIBUTE_DIRECTORY) != 0) + 1;
+            }
+        }
+    }
+
+    file->haveinfo = true;
+}
+
+bool ToCreateFlags(int32_t mode, DWORD& sharemode, DWORD& desiredaccess, DWORD& creationdisposition, DWORD& flagsandattributes) {
+    sharemode           = (mode >> 2) & 3;
+    desiredaccess       = ((mode << 2) | mode & Blizzard::File::Mode::write) << 29;
+    creationdisposition = 0;
+
+    if ((mode & Blizzard::File::Mode::truncate) == 0 && (mode & Blizzard::File::Mode::create) == 0) {
+        if ((mode & Blizzard::File::Mode::mustnotexist) == 0) {
+            creationdisposition = mode & Blizzard::File::Mode::mustexist ? OPEN_EXISTING : OPEN_ALWAYS;
+        } else {
+            creationdisposition = CREATE_NEW;
+        }
+    } else if (mode & Blizzard::File::Mode::mustnotexist) {
+        creationdisposition = CREATE_NEW;
+    } else {
+        creationdisposition = CREATE_ALWAYS;
+    }
+
+    flagsandattributes = FILE_ATTRIBUTE_NORMAL | (mode & Blizzard::File::Mode::temporary ? FILE_ATTRIBUTE_TEMPORARY : 0) | (mode & Blizzard::File::Mode::nocache ? FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING : 0);
+
+    return true;
+}
+
 namespace Stacked {
 
-bool SetWorkingDirectory(FileParms* parms) {
-    BLIZZARD_ASSERT(parms->filename);
-    return ::SetCurrentDirectory(parms->filename) != 0;
+// begin stacked file functions
+
+bool (SetWorkingDirectory)(FileParms* parms) {
+    BLIZZARD_ASSERT(parms->name);
+
+    return ::SetCurrentDirectory(PATH(parms->name)) != 0;
 }
 
-bool Close(FileParms* parms) {
-    auto file = parms->stream;
-    BLIZZARD_ASSERT(file != nullptr);
+bool (Close)(FileParms* parms) {
+    auto file = parms->file;
+    if (file->filehandle != INVALID_HANDLE_VALUE) {
+        ::CloseHandle(file->filehandle);
+    }
 
-    ::CloseHandle(file->filehandle);
-    Memory::Free(file);
+    Blizzard::Memory::Free(file);
 
     return true;
 }
 
-bool GetWorkingDirectory(FileParms* parms) {
-    if (!parms->directory || !parms->directorySize) {
+bool (GetWorkingDirectory)(FileParms* parms) {
+    if (!parms->buffer || !parms->buffersize) {
         // System_File::FileError(8)
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
-    auto size      = static_cast<DWORD>(parms->directorySize);
-    auto directory = static_cast<LPSTR>(parms->directory);
+    char cwd[BC_FILE_MAX_PATH];
+    ::GetCurrentDirectory(BC_FILE_MAX_PATH, cwd);
 
-    ::GetCurrentDirectory(size, directory);
+    FromNativeName(parms->buffer, parms->buffersize, cwd);
 
     return true;
 }
 
-bool ProcessDirFast(FileParms* parms) {
-    // Get parameters
-    auto unkflag   = parms->flag;
-    auto directory = parms->filename;
-    auto callback  = parms->callback;
-    auto param     = parms->param;
+bool (ProcessDirFast)(FileParms* parms) {
+    char dirfindpattern[512];
+    Blizzard::String::Format(dirfindpattern, 512, "%s\\*", parms->name);
 
-    // Set up walk parameters
-    File::ProcessDirParms processDirParms;
-    processDirParms.root  = directory;
-    processDirParms.param = param;
-
-    constexpr uint32_t formatSize = BC_FILE_MAX_PATH * 2;
-    char formatted[formatSize] = "";
-
-    // Tack on a backslash as well as an asterisk.
-    String::Format(formatted, formatSize, "%s\\*", processDirParms.root);
-
-    // Convert potentially large path to universal format
-    BC_FILE_PATH(path);
-    if (!File::Path::MakeNativePath(formatted, path, formatSize)) {
-        return false;
-    }
-
-    //
     WIN32_FIND_DATA findData;
-
-    auto hFindFile = ::FindFirstFile(formatted, &findData);
-
+    auto hFindFile = ::FindFirstFile(PATH(dirfindpattern), &findData);
     if (hFindFile == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_INVALID_ARGUMENT, "Win32 ProcessDirFast - %s", directory);
+        BC_FILE_SET_ERROR_MSG(8, "failed to open %s\n", parms->name);
         return false;
     }
 
-    BC_FILE_PATH(currentPath);
-    processDirParms.item = currentPath;
+    Blizzard::File::ProcessDirParms dirwalkparms;
+    dirwalkparms.dir   = parms->name;
+    dirwalkparms.param = parms->dirwalkparam;
+
+    char item[BC_FILE_MAX_PATH];
 
     while (true) {
-        // Ignore .. and .
+        // ignore .. and .
         if (findData.cFileName[0] != '.' || findData.cFileName[1] && (findData.cFileName[1] != '.' || findData.cFileName[2])) {
-            String::Copy(currentPath, findData.cFileName, BC_FILE_MAX_PATH);
-            processDirParms.itemIsDirectory = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+            FromNativeName(item, BC_FILE_MAX_PATH, findData.cFileName);
+            dirwalkparms.item  = item;
+            dirwalkparms.isdir = (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
 
-            if (!callback(processDirParms)) {
+            if (!parms->dirwalkcallback(dirwalkparms)) {
                 ::FindClose(hFindFile);
                 return true;
             }
+        }
 
-            if (!::FindNextFile(hFindFile, &findData)) {
-                break;
-            }
+        if (!::FindNextFile(hFindFile, &findData)) {
+            break;
         }
     }
 
@@ -107,638 +264,548 @@ bool ProcessDirFast(FileParms* parms) {
     return false;
 }
 
-bool Exists(FileParms* parms) {
-    auto filepath = parms->filename;
-    if (!filepath) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
+bool (Exists)(FileParms* parms) {
+    char name[BC_FILE_MAX_PATH];
+    if (parms->name) {
+        Blizzard::String::MakeBackslashPath(parms->name, name, sizeof(name));
+    } else {
+        name[0] = '\0';
     }
-
-    File::Path::QuickNative filepathNative(filepath);
-
-    auto dwFileAttributes = ::GetFileAttributes(static_cast<LPCSTR>(filepathNative.Str()));
+    auto dwFileAttributes = ::GetFileAttributes(static_cast<LPCSTR>(PATH(name)));
 
     if (dwFileAttributes == INVALID_FILE_ATTRIBUTES) {
-        parms->info->attributes = 0;
-        return false;
-    }
-
-    uint32_t fileAttributes = WinFile::AttributesToBC(dwFileAttributes);
-    parms->info->attributes = fileAttributes;
-
-    return fileAttributes & BC_FILE_ATTRIBUTE_NORMAL;
-}
-
-bool Flush(FileParms* parms) {
-    auto file = parms->stream;
-
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE ) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    auto status = ::FlushFileBuffers(file->filehandle);
-    return status != 0;
-}
-
-bool GetFileInfo(FileParms* parms) {
-    auto  file     = parms->stream;
-    auto  filepath = parms->filename;
-    auto  info     = parms->info;
-
-    if (filepath == nullptr && file == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    // StreamRecord* file may be used to supply storage of file info. (StreamRecord*->info)
-    if (file) {
-        BLIZZARD_ASSERT(file->filehandle != INVALID_HANDLE_VALUE);
-        if (info == nullptr) {
-            // telling this function to save file info into StreamRecord
-            info = &file->info;
-        }
-    }
-
-    if (filepath) {
-        // Fetch info based on filepath.
-        static File::FileInfo s_noinfo = {};
-        if (info == nullptr) {
-            info = &s_noinfo;
-        }
-
-        File::Path::QuickNative filepathNative(filepath);
-
-        WIN32_FILE_ATTRIBUTE_DATA fileAttributeData = {};
-
-        // Read attributes
-        if (!::GetFileAttributesEx(filepathNative.Str(), GetFileExInfoStandard, &fileAttributeData)) {
-            BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_INVALID_HANDLE, "Win32 GetFileInfo - GetFileAttributesExA failed");
-            return false;
-        }
-
-        return WinFile::AttributeFileInfoToBC(&fileAttributeData, info);
-    }
-
-    // Fetch info using opened file handle
-    auto filehandle = file->filehandle;
-
-    BY_HANDLE_FILE_INFORMATION byHandleInfo;
-    if (!::GetFileInformationByHandle(filehandle, &byHandleInfo)) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_HANDLE);
-        return false;
-    }
-
-    file->hasInfo = true;
-    parms->info = info;
-
-    return WinFile::HandleFileInfoToBC(&byHandleInfo, info);
-}
-
-bool GetFreeSpace(FileParms* parms) {
-    auto filename = parms->filename;
-
-    if (filename == nullptr || *filename == '\0') {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    auto len = String::Length(filename) + 2;
-    BC_FILE_PATH(systemPath);
-    // UNC convert
-    File::Path::MakeNativePath(filename, systemPath, BC_FILE_MAX_PATH);
-
-    // GetDiskFreeSpaceExA will fail without a trailing backslash
-    File::Path::ForceTrailingSeparator(systemPath, BC_FILE_MAX_PATH, BC_FILE_SYSTEM_PATH_SEPARATOR);
-
-    ULARGE_INTEGER freeBytesAvailableToCaller = {};
-    ULARGE_INTEGER totalNumberOfBytes         = {};
-    ULARGE_INTEGER totalNumberOfFreeBytes     = {};
-
-    if (!GetDiskFreeSpaceExA(systemPath, &freeBytesAvailableToCaller, &totalNumberOfBytes, &totalNumberOfFreeBytes)) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    parms->size64 = static_cast<uint64_t>(freeBytesAvailableToCaller.QuadPart);
-    return true;
-}
-
-bool GetPos(FileParms* parms) {
-    auto file = parms->stream;
-
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    LONG  high = 0;
-    DWORD low  = ::SetFilePointer(file->filehandle, 0, &high, FILE_CURRENT);
-    if (low == -1 && GetLastError()) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_HANDLE);
-        return false;
-    }
-
-    ULARGE_INTEGER ul = {};
-    ul.LowPart  = low;
-    ul.HighPart = high;
-
-    parms->position = ul.QuadPart;
-    return true;
-}
-
-bool GetRootChars(FileParms* parms) {
-    char cVar1 = '\0';
-    int32_t counter = 0;
-    int32_t size = 0;
-    char *buffer = nullptr;
-    const char *path = nullptr;
-    char unixPathFast[256] = {0};
-    const char *end = nullptr;
-
-    path = parms->filename;
-    counter = String::Length(path);
-    size = counter + 1;
-    if (size > 256) {
-        buffer = reinterpret_cast<char *>(Memory::Allocate(size));
-    } else {
-        buffer = unixPathFast;
-    }
-
-    // Invalid without error
-    if (size < 0x2) {
-        parms->end = 0;
-        parms->beginning = 0;
-    } else {
-        File::Path::MakeUnivPath(path, buffer, size);
-        path = buffer + 1;
-        // Get DOS canonical path
-        if (buffer[1] == ':') {
-            cVar1 = buffer[2];
-            parms->beginning = 0;
-            parms->end = (cVar1 == '/') + 2;
-        } else {
-            // Get UNC path
-            if ((*buffer == '/') && (buffer[1] == '/')) {
-                counter = 0;
-                do {
-                    path = strchr(path + 1, '$');
-                    if (path == nullptr) {
-                        parms->end = size;
-                        parms->beginning = 0;
-                        if (buffer != unixPathFast) {
-                            Memory::Free(buffer);
-                        }
-                        return true;
-                    }
-                    counter = counter + 1;
-                } while (counter < 2);
-                parms->end = intptr_t(path) + (1 - (intptr_t)buffer);
-            } else {
-                parms->end = 0;
-            }
-            parms->beginning = 0;
-        }
-    }
-
-    if (buffer != unixPathFast) {
-        Memory::Free(buffer);
-    }
-
-    return true;
-}
-
-bool IsAbsolutePath(FileParms* parms) {
-    auto path = parms->filename;
-
-    if (!path) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    auto first = path[0];
-
-    if (
-        // UNC
-        (
-            ((first == '\\') || (first == '/')) &&
-            ((path[1] == '\\' || (path[1] == '/')))
-        ) &&
-            (path[2] != '\0')) {
-            return true;
-    }
-
-    // DOS canonical
-    if (isalpha(first) && (path[1] == ':')) {
-        if (((path[2] == '\\') || (path[2] == '/')) && (path[3] != '\0')) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-bool IsReadOnly(FileParms* parms) {
-    auto filepath = parms->filename;
-    if (!filepath) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    File::Path::QuickNative filepathNative(filepath);
-
-    auto dwFileAttributes = ::GetFileAttributes(filepathNative.Str());
-
-    if (dwFileAttributes == INVALID_FILE_ATTRIBUTES) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    return (dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
-}
-
-bool MakeAbsolutePath(FileParms* parms) {
-    BC_FILE_PATH(full);
-
-    auto path = parms->filename;
-
-    if (path == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    ::_fullpath(full, path, BC_FILE_MAX_PATH);
-
-    File::Path::ForceTrailingSeparator(full, BC_FILE_MAX_PATH, BC_FILE_SYSTEM_PATH_SEPARATOR);
-
-    String::Copy(parms->directory, full, parms->directorySize);
-
-    return true;
-}
-
-bool CreateDirectory(FileParms* parms) {
-    constexpr size_t temp_size = 300;
-
-    auto path      = parms->filename;
-    auto recursive = parms->flag != 0;
-    char temp_path[temp_size] = {0};
-
-    String::Copy(temp_path, path, temp_size);
-
-    File::Path::ForceTrailingSeparator(temp_path, temp_size, '\\');
-
-    if (recursive) {
-        auto p = temp_path;
-        if (isalpha(p[0]) && p[1] == ':') {
-            p += 2;
-        }
-
-        // Loop through path and call CreateDirectory on path elements
-        for (auto p = temp_path + 1; *p != '\0'; p++) {
-            if (*p == '\\') {
-                *p = 0;
-
-                auto attributes = ::GetFileAttributes(temp_path);
-
-                // test path
-                if (attributes == INVALID_FILE_ATTRIBUTES) {
-                    // path does not exist, create directory
-                    if (!::CreateDirectory(temp_path, nullptr)) {
-                        return false;
-                    }
-                } else if ((attributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
-                    // not a directory
-                    return false;
-                }
-
-                *p = '\\';
-            }
-        }
-    } else {
-        // Create only the supplied directory.
-        if (::GetFileAttributes(temp_path) == INVALID_FILE_ATTRIBUTES) {
-            if (!::CreateDirectory(temp_path, nullptr)) {
-                if (::GetLastError() != ERROR_ALREADY_EXISTS) {
-                    return false;
-                }
-            }
-        }
-    }
-
-    return true;
-}
-
-bool Move(FileParms* parms) {
-    auto source      = parms->filename;
-    auto destination = parms->destination;
-
-    File::Path::QuickNative sourceNative(source);
-    File::Path::QuickNative destinationNative(destination);
-
-    BOOL ok = ::MoveFile(sourceNative.Str(), destinationNative.Str());
-
-    return ok != 0;
-}
-
-bool Copy(FileParms* parms) {
-    auto source      = parms->filename;
-    auto destination = parms->destination;
-
-    auto overwrite = parms->flag;
-
-    // file pointers
-    File::StreamRecord* st_source      = nullptr;
-    File::StreamRecord* st_destination = nullptr;
-
-    // Flags for working with src and dst files
-    auto flag_source      = BC_FILE_OPEN_READ | BC_FILE_OPEN_MUST_EXIST;
-    auto flag_destination = BC_FILE_OPEN_WRITE | BC_FILE_OPEN_CREATE;
-    if (!overwrite) {
-        // User commands that we cannot overwrite. Fail if file already exists
-        flag_destination |= BC_FILE_OPEN_MUST_NOT_EXIST;
-    } else {
-        // We are supposed to overwrite, so truncate the file to 0 bytes.
-        flag_destination |= BC_FILE_OPEN_TRUNCATE;
-    }
-
-    // Open source file to be copied
-    if (!File::Open(source, flag_source, st_source)) {
-        // FileError(2)
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_FILE_NOT_FOUND);
-        return false;
-    }
-
-    // Open (or create if it doesn't exist) destination file
-    if (!File::Open(destination, flag_destination, st_destination)) {
-        File::Close(st_source);
-        // FileError(4)
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_BUSY);
-        return false;
-    }
-
-    // Determine buffer copy size
-    auto sz_source = File::GetFileInfo(st_source)->size;
-
-    // copybuffer size upper limit is BC_FILE_SYSTEM_COPYBUFFER_SIZE
-    uint64_t sz_copybuffer = std::min(sz_source, static_cast<uint64_t>(BC_FILE_SYSTEM_COPYBUFFER_SIZE));
-    auto u8_copybuffer = reinterpret_cast<uint8_t*>(Memory::Allocate(sz_copybuffer));
-
-    // Loop through the source file, reading segments into copybuffer
-    for (uint64_t index = 0; index < sz_source; index += sz_copybuffer) {
-        // How many bytes to read
-        size_t sz_bytesToRead = static_cast<size_t>(sz_source - std::min(index+sz_copybuffer, sz_source));
-        size_t sz_bytesRead = 0;
-        size_t sz_bytesWritten = 0;
-        // Read data segment into copybuffer
-        auto status = File::Read(st_source, u8_copybuffer, sz_bytesToRead, &sz_bytesRead);
-        if (status) {
-            // Write copied segment to destination file
-            status = File::Write(st_destination, u8_copybuffer, sz_bytesRead, &sz_bytesWritten);
-        }
-
-        if (!status) {
-            // either read or write failed: cleanup copy buffer
-            Memory::Free(u8_copybuffer);
-            // close files
-            File::Close(st_source);
-            File::Close(st_destination);
-            // Delete malformed file
-            File::Delete(destination);
-            // return bad status, but without creating a file error.
-            return false;
-        }
-    }
-
-    Memory::Free(u8_copybuffer);
-    // close files
-    File::Close(st_source);
-    File::Close(st_destination);
-
-    // Success!
-    return true;
-}
-
-bool Open(FileParms* parms) {
-    // Path convert
-    auto path = parms->filename;
-    File::Path::QuickNative pathNative(path);
-
-    // Open file HANDLE
-    auto   flags   =  parms->flag;
-    bool   nocache  = parms->mode & File::Mode::nocache;
-    HANDLE handle   = WinFile::Open(pathNative.Str(), flags, nocache);
-
-    if (handle == INVALID_HANDLE_VALUE) {
-        DWORD err = ::GetLastError();
-        if (err) {
-            BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_GENERIC_FAILURE, "Win32 Open %s", parms->filename);
-        }
-        return false;
-    }
-
-    // Successfully opened file handle. Allocate StreamRecord + path str at the end.
-    auto recordSize = (sizeof(File::StreamRecord) - File::StreamRecord::s_padPath) + (1 + pathNative.Size());
-    auto fileData   = Memory::Allocate(recordSize);
-    // Memory could not be allocated
-    if (fileData == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_OOM);
-        return false;
-    }
-    // Clear extra data
-    String::MemFill(fileData, recordSize, 0);
-
-    // Populate fields
-    auto file = reinterpret_cast<File::StreamRecord*>(fileData);
-    file->flags      = flags;
-    file->filehandle = handle;
-    String::Copy(file->path, path, pathNative.Size());
-    File::GetFileInfo(file);
-
-    parms->stream = file;
-
-    return true;
-}
-
-bool Read(File::StreamRecord* file, void* data, int64_t offset, size_t* bytes) {
-    // File descriptor must be initialized!
-    BLIZZARD_ASSERT(file != nullptr && file->filehandle != INVALID_HANDLE_VALUE);
-
-    if (bytes == nullptr || *bytes == 0) {
+        parms->info->filetype = 0;
         return true;
     }
 
-    if (offset > -1) {
-        if (!File::SetPos(file, offset, BC_FILE_SEEK_START)) {
+    parms->info->filetype = dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? 2 : 1;
+
+    return true;
+}
+
+bool (Flush)(FileParms* parms) {
+    auto file = parms->file;
+
+    if (file->filehandle == INVALID_HANDLE_VALUE) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    return ::FlushFileBuffers(file->filehandle) != 0;
+}
+
+bool (GetFileInfo)(FileParms* parms) {
+    if (parms->name) {
+        WIN32_FILE_ATTRIBUTE_DATA fileinfo;
+        if (!::GetFileAttributesEx(PATH(parms->name), GetFileExInfoStandard, &fileinfo)) {
+            BC_FILE_SET_ERROR(8);
+            return false;
+        }
+
+        auto info = parms->info;
+
+        info->size = MAKEU64(fileinfo.nFileSizeHigh, fileinfo.nFileSizeLow);
+
+        info->createtime   = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
+        info->writetime  = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastWriteTime));
+        info->accesstime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastAccessTime));
+
+        info->name = nullptr;
+
+        info->attributes = FromNativeAttributes(fileinfo.dwFileAttributes);
+
+        info->normal = info->attributes & BC_FILE_ATTRIBUTE_NORMAL != 0;
+
+        if (fileinfo.dwFileAttributes == 0xFFFFFFFF) {
+            info->filetype = 0;
+        } else {
+            info->filetype = ((info->attributes & BC_FILE_ATTRIBUTE_DIRECTORY) != 0) + 1;
+        }
+        return true;
+    } else if (parms->file) {
+        auto file = parms->file;
+        GetFileInfoByFile(file);
+        parms->info = &file->info;
+        if (!file->info.name) {
+            file->info.name = file->name;
+        }
+        return true;
+    }
+
+    BC_FILE_SET_ERROR(8);
+    return false;
+}
+
+bool (GetFreeSpace)(FileParms* parms) {
+    auto name = parms->name;
+    if (name == nullptr || *name == '\0') {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    auto pathchars = (Blizzard::String::FindFilename(name) + 1) - name;
+    if (pathchars > 260) {
+        pathchars = 260;
+    }
+
+    char path[260];
+    char shortpath[260];
+    Blizzard::String::Copy(path, name, pathchars);
+
+    ULARGE_INTEGER freebytesavailable;
+    ULARGE_INTEGER totalbytesavailable;
+
+    auto shortpathchars = ::GetShortPathName(PATH(path), shortpath, 260);
+    if (shortpathchars && shortpathchars < 260) {
+        if (!GetDiskFreeSpaceEx(shortpath, &freebytesavailable, &totalbytesavailable, nullptr)) {
+            BC_FILE_SET_ERROR(8);
+            return false;
+        }
+    } else {
+        if (!GetDiskFreeSpaceEx(PATH(path), &freebytesavailable, &totalbytesavailable, nullptr)) {
+            BC_FILE_SET_ERROR(8);
             return false;
         }
     }
 
-    DWORD dwRead = 0;
+    parms->offset = static_cast<int64_t>(freebytesavailable.QuadPart);
 
-    BOOL ok = ::ReadFile(file->filehandle, data, *bytes, &dwRead, nullptr);
+    return true;
+}
 
-    if (ok == 0) {
-        // append any Win32 failure to the error log
-        BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_BAD_FILE, "Win32 Read %p - %s", GetLastError(), file->path);
+bool (GetPos)(FileParms* parms) {
+    auto file = parms->file;
+
+    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
-    *bytes = static_cast<size_t>(dwRead);
-
-	return true;
-}
-
-bool Read(FileParms* parms) {
-    return System_File::Stacked::Read(parms->stream, parms->param, -1, &parms->size);
-}
-
-bool ReadP(FileParms* parms) {
-    return System_File::Stacked::Read(parms->stream, parms->param, parms->position, &parms->size);
-}
-
-bool RemoveDirectory(FileParms* parms) {
-    auto dirpath = parms->filename;
-    if (dirpath == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+    LONG high = 0;
+    auto low  = ::SetFilePointer(file->filehandle, 0, &high, FILE_CURRENT);
+    if (low == INVALID_SET_FILE_POINTER && GetLastError()) {
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
-    File::Path::QuickNative pathNative(dirpath);
-
-    BOOL ok = ::RemoveDirectory(dirpath);
-
-    return ok != 0;
+    parms->offset = MAKEU64(high, low);
+    return true;
 }
 
-bool SetCacheMode(FileParms* parms) {
-    auto file = parms->stream;
+bool (GetRootChars)(FileParms* parms) {
+    char pathbuffer[256];
+    auto pathsize = Blizzard::String::Length(parms->name) + 1;
+    auto path     = pathsize > 256 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(pathsize)) : pathbuffer;
+
+    if (pathsize > 2) {
+        Blizzard::String::MakeUnivPath(parms->name, path, pathsize);
+        if (path[1] == ':') {
+            parms->offset = (path[2] == '/') + 2;
+        } else if (path[0] == '/' && path[1] == '/') {
+            uint32_t i = 0;
+            auto cur   = path + 1;
+            for (uint32_t i = 0; i < 2; i++) {
+                cur = strchr(cur + 1, '/');
+                if (!cur) {
+                    parms->offset = pathsize;
+                    if (path != pathbuffer) {
+                        Blizzard::Memory::Free(path);
+                    }
+                    return true;
+                }
+            }
+            parms->offset = (cur - path) + 1;
+        } else {
+            parms->offset = 0LL;
+        }
+    }
+
+    if (path != pathbuffer) {
+        Blizzard::Memory::Free(path);
+    }
+    return true;
+}
+
+bool (IsAbsolutePath)(FileParms* parms) {
+    auto path = parms->name;
+
+    auto first = path[0];
+    // UNC
+    if (((first == '\\' || first == '/') && ((path[1] == '\\' || path[1] == '/'))) && path[2] != '\0') {
+        return true;
+    }
+
+    // DOS canonical
+    if (isalpha(first) && (path[1] == ':') && (((path[2] == '\\') || (path[2] == '/')) && path[3] != '\0')) {
+        return true;
+    }
+
+    BC_FILE_SET_ERROR(8);
+    return false;
+}
+
+bool (IsReadOnly)(FileParms* parms) {
+    if (!parms->name) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+    auto dwFileAttributes = ::GetFileAttributes(PATH(parms->name));
+    if (dwFileAttributes == INVALID_FILE_ATTRIBUTES) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    return dwFileAttributes & FILE_ATTRIBUTE_READONLY;
+}
+
+bool (MakeAbsolutePath)(FileParms* parms) {
+    if (!parms->name) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    char full[BC_FILE_MAX_PATH];
+    ::_fullpath(full, PATH(parms->name), BC_FILE_MAX_PATH);
+    FromNativeName(parms->buffer, parms->buffersize, full);
+
+    Blizzard::String::ForceTrailingSeparator(parms->buffer, parms->buffersize, '\0');
+
+    return true;
+}
+
+// avoid clobbering
+//   System_File::Stacked::CreateDirectory
+// into
+//    System_File::Stacked::CreateDirectoryA
+#undef CreateDirectory
+bool (CreateDirectory)(FileParms* parms) {
+#define CreateDirectory CreateDirectoryA
+    if (!parms->name) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    char pathbuffer[260];
+    auto pathsize = Blizzard::String::Length(parms->name) + 1;
+    auto path     = pathsize > 260 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(pathsize)) : pathbuffer;
+
+    Blizzard::String::MakeBackslashPath(parms->name, path, pathsize);
+
+    SECURITY_ATTRIBUTES security_attr = {};
+    security_attr.nLength             = sizeof(SECURITY_ATTRIBUTES);
+    security_attr.bInheritHandle      = FALSE;
+
+    if (parms->set_acl) {
+        ConvertStringSecurityDescriptorToSecurityDescriptorW(L"D:(A;OICI;GA;;;BU)", OWNER_SECURITY_INFORMATION, &security_attr.lpSecurityDescriptor, nullptr);
+    }
+
+    if (parms->recurse) {
+        char leadingpath[260];
+
+        for (auto s = path; *s && s < (s + Blizzard::String::Length(s)); s++) {
+            while (*s && *s != '\\') {
+                s++;
+            }
+
+            auto leadingpathsize = (s - path) + 2;
+            if (leadingpathsize > 260) {
+                leadingpathsize = 260;
+            }
+            if (Blizzard::String::Copy(leadingpath, path, leadingpathsize)) {
+                BC_FILE_SET_ERROR(8);
+                if (path != pathbuffer) {
+                    Blizzard::Memory::Free(path);
+                }
+                return false;
+            }
+
+            Blizzard::String::QuickNativePath<300UL> directorypath(leadingpath);
+
+            if (::CreateDirectory(directorypath.ToString(), parms->set_acl ? &security_attr : nullptr)) {
+                if (*s == '\0') {
+                    break;
+                }
+            } else {
+                auto last_err = ::GetLastError();
+
+                if ((last_err != ERROR_ALREADY_EXISTS && last_err != ERROR_ACCESS_DENIED)) {
+                    if (path != pathbuffer) {
+                        Blizzard::Memory::Free(path);
+                    }
+                    BC_FILE_SET_ERROR(8);
+                    return false;
+                }
+
+                auto directoryattributes = GetFileAttributes(directorypath.ToString());
+                if (directoryattributes == INVALID_FILE_ATTRIBUTES || (directoryattributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+                    if (path != pathbuffer) {
+                        Blizzard::Memory::Free(path);
+                    }
+                    BC_FILE_SET_ERROR(8);
+                    return false;
+                }
+            }
+        }
+    } else {
+        if (!::CreateDirectory(PATH(path), parms->set_acl ? &security_attr : nullptr)) {
+            auto last_err = ::GetLastError();
+            bool result   = last_err == ERROR_ALREADY_EXISTS || last_err == ERROR_ACCESS_DENIED;
+            if (path != pathbuffer) {
+                Blizzard::Memory::Free(path);
+            }
+            return result;
+        }
+    }
+
+    if (path != pathbuffer) {
+        Blizzard::Memory::Free(path);
+    }
+    return true;
+}
+
+bool (Move)(FileParms* parms) {
+    char src[BC_FILE_MAX_PATH];
+    char dst[BC_FILE_MAX_PATH];
+    if (parms->name) {
+        Blizzard::String::MakeBackslashPath(parms->name, src, BC_FILE_MAX_PATH);
+    } else {
+        src[0] = '\0';
+    }
+    if (parms->newname) {
+        Blizzard::String::MakeBackslashPath(parms->newname, dst, BC_FILE_MAX_PATH);
+    } else {
+        dst[0] = '\0';
+    }
+    return ::MoveFile(PATH(src), PATH(dst)) != 0;
+}
+
+bool (Copy)(FileParms* parms) {
+    char srcname[BC_FILE_MAX_PATH];
+    char dstname[BC_FILE_MAX_PATH];
+    if (parms->name) {
+        Blizzard::String::MakeBackslashPath(parms->name, srcname, BC_FILE_MAX_PATH);
+    } else {
+        srcname[0] = '\0';
+    }
+    if (parms->newname) {
+        Blizzard::String::MakeBackslashPath(parms->newname, dstname, BC_FILE_MAX_PATH);
+    } else {
+        dstname[0] = '\0';
+    }
+
+    Blizzard::File::StreamRecord* src;
+    Blizzard::File::StreamRecord* dst;
+
+    if (!Blizzard::File::Open(srcname, Blizzard::File::Mode::read | Blizzard::File::Mode::shareread | Blizzard::File::Mode::mustexist, src)) {
+        BC_FILE_SET_ERROR(2); // TODO: find out what 2 is
+        return false;
+    }
+
+    if (!Blizzard::File::Open(dstname, Blizzard::File::Mode::write | (parms->overwrite ? Blizzard::File::Mode::create : Blizzard::File::Mode::create | Blizzard::File::Mode::mustnotexist), dst)) {
+        BC_FILE_SET_ERROR(4); // TODO: find out what 4 is
+        return false;
+    }
+
+    auto size           = Blizzard::File::GetFileInfo(src)->size;
+    auto copybuffersize = size > BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size;
+    auto copybuffer     = Blizzard::Memory::Allocate(copybuffersize);
+
+    int64_t offset = 0;
+
+    bool result = true;
+
+    while (offset < size) {
+        auto count = static_cast<int32_t>(size - offset >= BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size - offset);
+        if (!Blizzard::File::Read(src, copybuffer, offset, &count)) {
+            result = false;
+            break;
+        }
+
+        if (!Blizzard::File::Write(dst, copybuffer, offset, &count)) {
+            result = false;
+            break;
+        }
+
+        offset += static_cast<int64_t>(count);
+    }
+
+    Blizzard::Memory::Free(copybuffer);
+    Blizzard::File::Close(src);
+    Blizzard::File::Close(dst);
+    if (!result) {
+        Blizzard::File::Delete(dstname);
+    }
+    return result;
+}
+
+bool (Open)(FileParms* parms) {
+    char name[BC_FILE_MAX_PATH];
+    if (parms->name) {
+        Blizzard::String::MakeBackslashPath(parms->name, name, BC_FILE_MAX_PATH);
+    } else {
+        name[0] = '\0';
+    }
+
+    DWORD sharemode;
+    DWORD desiredaccess;
+    DWORD creationdisposition;
+    DWORD flagsandattributes;
+    if (!ToCreateFlags(parms->mode, sharemode, desiredaccess, creationdisposition, flagsandattributes)) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    auto filehandle = CreateFile(
+        PATH(name),
+        desiredaccess,
+        sharemode,
+        nullptr,
+        creationdisposition,
+        flagsandattributes,
+        nullptr);
+    if (filehandle == INVALID_HANDLE_VALUE) {
+        BC_FILE_SET_ERROR_MSG(4, "Win32 Open - %s", name);
+        return false;
+    }
+
+    auto file = parms->file;
 
     if (file == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+        // alloc(sizeof(StreamRecord) + len(name) + 1)
+        // block of memory holds file as well as C string of the filename
+        auto namesize = Blizzard::String::Length(name);
+        file          = reinterpret_cast<Blizzard::File::StreamRecord*>(Blizzard::Memory::Allocate(sizeof(Blizzard::File::StreamRecord) + 1 + namesize));
+        // set the name pointer inside of StreamRecord to point to the end of StreamRecord (i.e. the start of the name cstring in the memory block)
+        auto filename = reinterpret_cast<char*>(file) + sizeof(Blizzard::File::StreamRecord);
+        file->name    = filename;
+        // copy name into memory block
+        Blizzard::String::Copy(filename, name, namesize + 1);
+    }
+
+    file->filehandle = filehandle;
+    file->mode       = parms->mode;
+    file->haveinfo   = false;
+    file->info.name  = file->name;
+    GetFileInfoByFile(file);
+
+    if (parms->mode & Blizzard::File::Mode::append) {
+        Blizzard::File::SetPos(file, file->info.size, BC_FILE_SEEK_START);
+    }
+
+    parms->file = file;
+    return true;
+}
+
+bool (RemoveDirectory)(FileParms* parms) {
+    if (parms->recurse) {
+        return Blizzard::File::RemoveDirectoryAndContents(parms->name, false);
+    }
+    if (!parms->name) {
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
+    char namebuffer[260];
+    auto namesize = Blizzard::String::Length(parms->name);
+    auto name     = namesize > 260 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(namesize)) : namebuffer;
+    Blizzard::String::MakeBackslashPath(parms->name, name, 260);
+
+    auto removed = ::RemoveDirectory(PATH(name));
+
+    if (name != namebuffer) {
+        Blizzard::Memory::Free(name);
+    }
+
+    return removed != 0;
+}
+
+bool (SetCacheMode)(FileParms* parms) {
+    auto file = parms->file;
+
+    parms->mode |= ~(Blizzard::File::Mode::nocache);
+
+    DWORD sharemode;
+    DWORD desiredaccess;
+    DWORD creationdisposition;
+    DWORD flagsandattributes;
+    if (!ToCreateFlags(parms->mode, sharemode, desiredaccess, creationdisposition, flagsandattributes)) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
+
+    ::CloseHandle(file->filehandle);
+
+    file->filehandle = CreateFile(PATH(file->info.name), desiredaccess, sharemode, nullptr, creationdisposition, flagsandattributes, nullptr);
     if (file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_HANDLE);
+        BC_FILE_SET_ERROR_MSG(4, "Win32 Close");
         return false;
-    }
-
-    File::Path::QuickNative pathNative(file->path);
-
-    // Close handle and reopen
-    CloseHandle(file->filehandle);
-
-    bool nocache = (parms->mode & File::Mode::nocache) != 0;
-
-    file->filehandle = WinFile::Open(pathNative.Str(), file->flags, nocache);
-
-    if (file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR_MSG(4, "Win32 SetCacheMode - %s", file->path);
-        return false;
-    }
-
-    if (nocache) {
-        parms->mode &= ~(File::Mode::nocache);
     }
 
     return true;
 }
 
-bool SetEOF(FileParms* parms) {
-    auto file = parms->stream;
+bool (SetEOF)(FileParms* parms) {
+    auto file = parms->file;
 
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+    int64_t offset;
+    if (!Blizzard::File::GetPos(file, offset) || !Blizzard::File::SetPos(file, parms->offset, parms->whence)) {
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
-    // Save current pos
-    int64_t originalpos = 0;
+    auto status = ::SetEndOfFile(file->filehandle);
+    Blizzard::File::SetPos(file, offset, BC_FILE_SEEK_START);
 
-    if (!File::GetPos(file, originalpos)) {
-        return false;
-    }
-
-    int64_t newpos = parms->position;
-    auto    whence = parms->whence;
-
-    if (!File::SetPos(file, newpos, whence)) {
-        return false;
-    }
-
-    BOOL b = ::SetEndOfFile(file->filehandle);
-
-    if (!b) {
-        BC_FILE_SET_ERROR_MSG(4, "Win32 SetEOF - %s", file->path);
-        return false;
-    }
-
-    // Restore original pos
-    return File::SetPos(file, originalpos, BC_FILE_SEEK_START);
+    return status != 0;
 }
 
-bool SetAttributes(FileParms* parms) {
-    auto info = parms->info;
+bool (SetAttributes)(FileParms* parms) {
+    if (parms->setinfo & BC_SYSTEM_FILE_INFO_TIMES) {
+        auto info = parms->info;
 
-    if (info == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
+        auto createtime     = BreakFileTime(Blizzard::Time::ToFileTime(info->createtime));
+        auto lastaccesstime = BreakFileTime(Blizzard::Time::ToFileTime(info->accesstime));
+        auto lastwritetime  = BreakFileTime(Blizzard::Time::ToFileTime(info->writetime));
 
-    auto    mode       = parms->mode;
-    auto    attributes = info->attributes;
-    int32_t status     = 0;
-    auto    file       = parms->stream;
-    auto    path       = parms->filename;
-
-    if (mode & File::Mode::settimes) {
-        auto modTime = info->modificationTime;
-
-        FILETIME ft = WinFile::PackTime(Time::ToWinFiletime(modTime));
-
-        if (::SetFileTime(file->filehandle, nullptr, nullptr, &ft)) {
-            file->info.modificationTime = modTime;
-
-            parms->mode &= ~(File::Mode::settimes);
-        }
-    }
-
-    if (mode & File::Mode::setperms) {
-        File::Path::QuickNative pathNative(parms->filename);
-
-        DWORD dwAttributes = WinFile::AttributesToWin(info->attributes);
-
-        BOOL ok = ::SetFileAttributes(pathNative.Str(), dwAttributes);
-
-        if (!ok) {
-            BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+        if (!::SetFileTime(parms->file->filehandle, &createtime, &lastaccesstime, &lastwritetime)) {
+            BC_FILE_SET_ERROR(8);
             return false;
         }
 
-        parms->mode &= ~(File::Mode::setperms);
+        parms->setinfo &= ~(BC_SYSTEM_FILE_INFO_TIMES);
     }
 
-    return true;
+    if (parms->setinfo & BC_SYSTEM_FILE_INFO_ATTRIBUTES) {
+        if (!::SetFileAttributes(PATH(parms->file->name), ToNativeAttributes(parms->info->attributes))) {
+            BC_FILE_SET_ERROR(8);
+            return false;
+        }
+
+        parms->setinfo &= ~(BC_SYSTEM_FILE_INFO_ATTRIBUTES);
+    }
+
+    return parms->setinfo == 0;
 }
 
-bool SetPos(FileParms* parms) {
-    auto file = parms->stream;
+bool (SetPos)(FileParms* parms) {
+    auto file = parms->file;
 
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
+    if (file->filehandle == INVALID_HANDLE_VALUE) {
+        BC_FILE_SET_ERROR(8);
         return false;
     }
 
-    auto offset = parms->position;
-    auto whence = parms->whence;
+    LONG distancetomovelow;
+    LONG distancetomovehigh;
+    BREAKFILEPOINTER(parms->offset, distancetomovehigh, distancetomovelow);
 
-    auto offsetLow  = static_cast<LONG>(offset);
-    auto offsetHigh = static_cast<LONG>(offset >> 32);
+    auto movemethod = static_cast<DWORD>(parms->whence);
+    if (movemethod > FILE_END) {
+        movemethod = FILE_END;
+    }
 
-    DWORD res = ::SetFilePointer(file->filehandle, offsetLow, &offsetHigh, static_cast<DWORD>(whence));
-    if (res == INVALID_SET_FILE_POINTER) {
-        res = GetLastError();
-        if (res != 0) {
+    if (::SetFilePointer(file->filehandle, distancetomovelow, &distancetomovehigh, movemethod) == INVALID_SET_FILE_POINTER) {
+        if (GetLastError()) {
             return false;
         }
     }
@@ -746,76 +813,17 @@ bool SetPos(FileParms* parms) {
     return true;
 }
 
-bool Delete(FileParms* parms) {
-    auto deletePath = parms->filename;
-
-    if (deletePath == nullptr) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
+bool (Delete)(FileParms* parms) {
+    char name[BC_FILE_MAX_PATH];
+    if (parms->name) {
+        Blizzard::String::MakeBackslashPath(parms->name, name, BC_FILE_MAX_PATH);
+    } else {
+        name[0] = '\0';
     }
-
-    File::Path::QuickNative deletePathNative(deletePath);
-
-    BOOL ok = ::DeleteFile(deletePathNative.Str());
-
-    return ok != 0;
-}
-
-bool Write(FileParms* parms) {
-    auto file = parms->stream;
-    auto data = parms->param;
-    auto size = parms->size;
-
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    DWORD numberOfBytesWritten = 0;
-
-    BOOL ok = WriteFile(file->filehandle, data, size, &numberOfBytesWritten, nullptr);
-
-    return ok != 0;
-}
-
-bool WriteP(FileParms* parms) {
-    auto file     = parms->stream;
-    auto data     = parms->param;
-    auto position = parms->position;
-    auto size     = parms->size;
-
-    if (file == nullptr || file->filehandle == INVALID_HANDLE_VALUE) {
-        BC_FILE_SET_ERROR(BC_FILE_ERROR_INVALID_ARGUMENT);
-        return false;
-    }
-
-    int64_t origpos = 0;
-
-    if (!File::GetPos(file, origpos)) {
-        return false;
-    }
-
-    if (!File::SetPos(file, position, BC_FILE_SEEK_START)) {
-        return false;
-    }
-
-    DWORD numberOfBytesWritten = 0;
-    BOOL ok = WriteFile(file->filehandle, data, size, &numberOfBytesWritten, nullptr);
-    if (ok == 0) {
-        BC_FILE_SET_ERROR_MSG(BC_FILE_ERROR_BAD_FILE, "Win32 Write - %s", file->path);
-
-        return false;
-    }
-
-    return File::SetPos(file, origpos, BC_FILE_SEEK_START);
+    return ::DeleteFile(PATH(name)) != 0;
 }
 
 } // namespace Stacked
 } // namespace System_File
-} // namespace Blizzard
-
-/********************************
-* End of Win32 Stacked functions *
-*********************************/
 
 #endif

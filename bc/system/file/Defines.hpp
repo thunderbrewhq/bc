@@ -1,13 +1,14 @@
-#ifndef BC_FILE_SYSTEM_DEFINES_HPP
-#define BC_FILE_SYSTEM_DEFINES_HPP
+#ifndef BC_SYSTEM_FILE_DEFINES_HPP
+#define BC_SYSTEM_FILE_DEFINES_HPP
 
-// Constants
+// how much data to buffer when copying with File::Copy
+#define BC_SYSTEM_FILE_COPYBUFFER_SIZE 0xA00000LL
 
-// How much data to buffer when copying with File::Copy
-#define BC_FILE_SYSTEM_COPYBUFFER_SIZE 0xA00000UL
-
-// Utility macros
-
-#define BC_FILE_PATH(localname) char localname[BC_FILE_MAX_PATH] = {0}
+// this bit field controls which file information is set by SetFileInfo
+#define BC_SYSTEM_FILE_INFO_UNK_0       0x01
+#define BC_SYSTEM_FILE_INFO_UNK_1       0x02
+#define BC_SYSTEM_FILE_INFO_ATTRIBUTES  0x04
+#define BC_SYSTEM_FILE_INFO_UNK_3       0x08
+#define BC_SYSTEM_FILE_INFO_TIMES       0x10
 
 #endif
