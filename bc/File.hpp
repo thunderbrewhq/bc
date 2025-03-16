@@ -11,6 +11,7 @@
 #include "bc/file/CreateDirectory.hpp"
 #include "bc/file/Delete.hpp"
 #include "bc/file/Exists.hpp"
+#include "bc/file/Flush.hpp"
 #include "bc/file/GetFileInfo.hpp"
 #include "bc/file/GetPos.hpp"
 #include "bc/file/GetWorkingDirectory.hpp"
