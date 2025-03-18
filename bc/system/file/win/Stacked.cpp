@@ -10,6 +10,7 @@
 #include "bc/Unicode.hpp"
 #include "bc/File.hpp"
 #include "bc/time/Time.hpp"
+#include "bc/memory/Storm.hpp"
 
 #include <algorithm>
 
@@ -208,8 +209,7 @@ bool Close(FileParms* parms) {
         ::CloseHandle(file->filehandle);
     }
 
-    Blizzard::Memory::Free(file);
-
+    SMemFree(file);
     return true;
 }
 
@@ -676,7 +676,7 @@ bool Open(FileParms* parms) {
         // alloc(sizeof(StreamRecord) + len(name) + 1)
         // block of memory holds file as well as C string of the filename
         auto namesize = Blizzard::String::Length(name);
-        file          = reinterpret_cast<Blizzard::File::StreamRecord*>(Blizzard::Memory::Allocate(sizeof(Blizzard::File::StreamRecord) + 1 + namesize));
+        file          = reinterpret_cast<Blizzard::File::StreamRecord*>(SMemAlloc(sizeof(Blizzard::File::StreamRecord) + 1 + namesize, __FILE__, __LINE__, 0x8));
         // set the name pointer inside of StreamRecord to point to the end of StreamRecord (i.e. the start of the name cstring in the memory block)
         auto filename = reinterpret_cast<char*>(file) + sizeof(Blizzard::File::StreamRecord);
         file->name    = filename;

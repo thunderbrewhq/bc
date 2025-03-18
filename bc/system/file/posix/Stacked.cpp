@@ -7,6 +7,7 @@
 #include "bc/Debug.hpp"
 #include "bc/File.hpp"
 #include "bc/Memory.hpp"
+#include "bc/memory/Storm.hpp"
 #include "bc/String.hpp"
 #include "bc/system/file/posix/Support.hpp"
 #include <cerrno>
@@ -54,7 +55,7 @@ bool Close(FileParms* parms) {
     BLIZZARD_ASSERT(file != nullptr);
 
     ::close(file->filefd);
-    Blizzard::Memory::Free(file);
+    SMemFree(file);
 
     return true;
 }
@@ -652,7 +653,7 @@ bool Open(FileParms* parms) {
 
     if (!file) {
         auto namelength = Blizzard::String::Length(name.ToString()) + 1;
-        file            = reinterpret_cast<Blizzard::File::StreamRecord*>(Blizzard::Memory::Allocate(sizeof(Blizzard::File::StreamRecord) + namelength));
+        file            = reinterpret_cast<Blizzard::File::StreamRecord*>(SMemAlloc(sizeof(Blizzard::File::StreamRecord) + namelength, __FILE__, __LINE__, 0x8));
         auto filename   = reinterpret_cast<char*>(file) + sizeof(Blizzard::File::StreamRecord);
         file->name      = filename;
         Blizzard::String::Copy(filename, name.ToString(), namelength);
@@ -663,9 +664,10 @@ bool Open(FileParms* parms) {
     file->haveinfo = false;
     file->mode     = parms->mode;
 
-    // if (!file->unk48 || !*file->unk48) {
-    file->info.size = info.st_size;
-    // }
+    // TODO: this part is likely GetFileInfoByFile
+    if (!file->unk48 || !*file->unk48) {
+        file->info.size = info.st_size;
+    }
 
     auto modtime = Blizzard::Time::FromUnixTime(info.st_mtime);
 
