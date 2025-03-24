@@ -62,7 +62,7 @@ static const uint8_t bytesFromUTF8[] = {
 };
 
 int32_t ConvertUTF16to8(uint8_t* dst, uint32_t dstmaxchars, const uint16_t* src, uint32_t srcmaxchars, uint32_t* dstchars, uint32_t* srcchars) {
-    auto srcend   = srcmaxchars & 0x80000000 ? reinterpret_cast<uint16_t*>(0xFFFFFFFF) : &src[srcmaxchars];
+    auto srcend   = srcmaxchars & 0x80000000 ? std::numeric_limits<const uint16_t*>::max() : &src[srcmaxchars];
     auto dstend   = &dst[dstmaxchars];
     auto dststart = dst;
     auto srcstart = src;
