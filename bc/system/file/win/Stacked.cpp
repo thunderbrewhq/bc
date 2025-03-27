@@ -194,7 +194,11 @@ namespace Stacked {
 // begin stacked file functions
 
 bool SetWorkingDirectory(FileParms* parms) {
-    BLIZZARD_ASSERT(parms->name);
+    BC_ASSERT(parms->name);
+    if (!parms->name) {
+        BC_FILE_SET_ERROR(8);
+        return false;
+    }
 
     return ::SetCurrentDirectory(PATH(parms->name)) != 0;
 }
@@ -347,15 +351,15 @@ bool GetFreeSpace(FileParms* parms) {
         return false;
     }
 
-    char path[PATH_MAX];
-    char shortpath[PATH_MAX];
-    Blizzard::String::Copy(path, name, std::min(static_cast<int32_t>((Blizzard::String::FindFilename(name) + 1) - name), PATH_MAX));
+    char path[MAX_PATH];
+    char shortpath[MAX_PATH];
+    Blizzard::String::Copy(path, name, std::min(static_cast<int32_t>((Blizzard::String::FindFilename(name) + 1) - name), MAX_PATH));
 
     ULARGE_INTEGER freebytesavailable;
     ULARGE_INTEGER totalbytesavailable;
 
-    auto shortpathchars = ::GetShortPathName(PATH(path), shortpath, PATH_MAX);
-    if (shortpathchars && shortpathchars < PATH_MAX) {
+    auto shortpathchars = ::GetShortPathName(PATH(path), shortpath, MAX_PATH);
+    if (shortpathchars && shortpathchars < MAX_PATH) {
         if (!GetDiskFreeSpaceEx(shortpath, &freebytesavailable, &totalbytesavailable, nullptr)) {
             BC_FILE_SET_ERROR(8);
             return false;
@@ -478,9 +482,9 @@ bool CreateDirectory(FileParms* parms) {
         return false;
     }
 
-    char pathbuffer[PATH_MAX];
+    char pathbuffer[MAX_PATH];
     auto pathsize = Blizzard::String::Length(parms->name) + 1;
-    auto path     = pathsize > PATH_MAX ? new char[pathsize] : pathbuffer;
+    auto path     = pathsize > MAX_PATH ? new char[pathsize] : pathbuffer;
 
     Blizzard::String::MakeBackslashPath(parms->name, path, pathsize);
 
@@ -493,14 +497,14 @@ bool CreateDirectory(FileParms* parms) {
     }
 
     if (parms->recurse) {
-        char leadingpath[PATH_MAX];
+        char leadingpath[MAX_PATH];
 
         for (auto s = path; *s && s < (s + Blizzard::String::Length(s)); s++) {
             while (*s && *s != '\\') {
                 s++;
             }
 
-            if (Blizzard::String::Copy(leadingpath, path, std::min(static_cast<int32_t>(s - path) + 2, PATH_MAX))) {
+            if (Blizzard::String::Copy(leadingpath, path, std::min(static_cast<int32_t>(s - path) + 2, MAX_PATH))) {
                 BC_FILE_SET_ERROR(8);
                 if (path != pathbuffer) {
                     delete path;
@@ -693,10 +697,10 @@ bool RemoveDirectory(FileParms* parms) {
         return false;
     }
 
-    char namebuffer[PATH_MAX];
+    char namebuffer[MAX_PATH];
     auto namesize = Blizzard::String::Length(parms->name) + 1;
-    auto name     = namesize > PATH_MAX ? new char[namesize] : namebuffer;
-    Blizzard::String::MakeBackslashPath(parms->name, name, PATH_MAX);
+    auto name     = namesize > MAX_PATH ? new char[namesize] : namebuffer;
+    Blizzard::String::MakeBackslashPath(parms->name, name, MAX_PATH);
 
     auto removed = ::RemoveDirectoryA(PATH(name));
 

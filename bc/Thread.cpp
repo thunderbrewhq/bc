@@ -8,7 +8,7 @@ void Blizzard::Thread::AllocateLocalStorage(TLSSlot* slot) {
 
 void* Blizzard::Thread::RegisterLocalStorage(TLSSlot* slot, void* (*constructor)(void*), void* userData, void (*destructor)(void*)) {
     if (!System_Thread::TLSSlotIsAllocated(slot) && !System_Thread::AllocateTLSSlot(slot, destructor)) {
-        BLIZZARD_ASSERT(!"Unable to allocate thread-local storage");
+        BC_ASSERT(!"Unable to allocate thread-local storage");
     }
 
     auto value = System_Thread::InternalGetLocalStorage(slot);
@@ -23,7 +23,7 @@ void* Blizzard::Thread::RegisterLocalStorage(TLSSlot* slot, void* (*constructor)
 }
 
 void Blizzard::Thread::SetLocalStorage(const TLSSlot* slot, const void* value) {
-    BLIZZARD_ASSERT(Blizzard::Thread::TLSSlotIsAllocated(slot));
+    BC_ASSERT(Blizzard::Thread::TLSSlotIsAllocated(slot));
 
     System_Thread::InternalSetLocalStorage(slot, value);
 }

@@ -91,7 +91,7 @@ void ForceTrailingSeparator(char* buf, int32_t bufMax, char separator) {
     }
 
     // Add (back*) trailing separator
-    BLIZZARD_ASSERT(len <= bufMax - 2);
+    BC_ASSERT(len <= bufMax - 2);
     buf[len]     = separator;
     buf[len + 1] = '\0'; // pad null
 }

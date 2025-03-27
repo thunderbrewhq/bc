@@ -85,7 +85,7 @@ Time::Timestamp Now() {
 void TimeInit() {
     // Record absolute clock beginning moment in raw CPU time
     ReadTSC(s_absBegin);
-    BLIZZARD_ASSERT(s_absBegin != 0);
+    BC_ASSERT(s_absBegin != 0);
 
     // Look at system clock's GMT/UTC time as nanoseconds
     // This associates a point in GMT with the more precise measurements obtained from reading the timestamp counter

@@ -5,7 +5,7 @@
 #include "bc/file/Defines.hpp"
 
 int64_t OsSetFilePointer(HOSFILE fileHandle, int64_t distanceToMove, uint32_t moveMethod) {
-    BLIZZARD_ASSERT(moveMethod <= 2);
+    BC_ASSERT(moveMethod <= 2);
 
     auto file = reinterpret_cast<Blizzard::File::StreamRecord*>(fileHandle);
 

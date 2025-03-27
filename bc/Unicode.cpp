@@ -225,13 +225,13 @@ done:
 
 int32_t ConvertUTF8to16Len(const uint8_t* src, uint32_t srcmaxchars, uint32_t* srcchars) {
     // TODO
-    BLIZZARD_ASSERT(0);
+    BC_ASSERT(0);
     return -1;
 }
 
 int32_t GetCodepointFromUTF8(const uint8_t** c) {
     // TODO
-    BLIZZARD_ASSERT(0);
+    BC_ASSERT(0);
     return -1;
 }
 

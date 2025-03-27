@@ -37,10 +37,10 @@ void Blizzard::System_Thread::AddToRegistry(Thread::ThreadRecord* thread) {
 bool Blizzard::System_Thread::AllocateLocalStorage(Thread::TLSSlot* slot, void (*destructor)(void*)) {
     System_Thread::InitThreadSystem();
 
-    BLIZZARD_ASSERT(!System_Thread::TLSSlotIsAllocated(slot));
+    BC_ASSERT(!System_Thread::TLSSlotIsAllocated(slot));
 
     if (!System_Thread::InternalAllocateLocalStorage(slot, destructor)) {
-        BLIZZARD_ASSERT(!"failed to allocate TLS");
+        BC_ASSERT(!"failed to allocate TLS");
         return false;
     }
 
@@ -124,10 +124,10 @@ void* Blizzard::System_Thread::InternalGetLocalStorage(const Thread::TLSSlot* sl
 void Blizzard::System_Thread::InternalSetLocalStorage(const Thread::TLSSlot* slot, const void* value) {
 #if defined(WHOA_SYSTEM_WIN)
     auto result = TlsSetValue(slot->key, const_cast<void*>(value));
-    BLIZZARD_ASSERT(result);
+    BC_ASSERT(result);
 #elif defined(WHOA_SYSTEM_MAC) || defined(WHOA_SYSTEM_LINUX)
     auto err = pthread_setspecific(slot->key, value);
-    BLIZZARD_ASSERT(err == 0);
+    BC_ASSERT(err == 0);
 #endif
 }
 

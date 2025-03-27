@@ -51,7 +51,7 @@ bool SetWorkingDirectory(FileParms* parms) {
 // close
 bool Close(FileParms* parms) {
     auto file = parms->file;
-    BLIZZARD_ASSERT(file != nullptr);
+    BC_ASSERT(file != nullptr);
 
     ::close(file->filefd);
     FREE(file);
@@ -157,7 +157,7 @@ bool Exists(FileParms* parms) {
 // flush
 bool Flush(FileParms* parms) {
     auto file = parms->file;
-    BLIZZARD_ASSERT(file != nullptr);
+    BC_ASSERT(file != nullptr);
 
 #if defined(WHOA_SYSTEM_MAC)
     // from BSD syscall manual:
@@ -592,7 +592,7 @@ bool Open(FileParms* parms) {
     auto read  = (parms->mode & Blizzard::File::Mode::read) != 0;
     auto write = (parms->mode & Blizzard::File::Mode::write) != 0;
 
-    BLIZZARD_ASSERT(read || write);
+    BC_ASSERT(read || write);
     if (!read && !write) {
         BC_FILE_SET_ERROR_MSG(8, "Posix Open - Bad file mode - %s", name.ToString());
         return false;
@@ -697,7 +697,7 @@ bool RemoveDirectory(FileParms* parms) {
 bool SetCacheMode(FileParms* parms) {
 #if defined(WHOA_SYSTEM_MAC)
     auto mode = parms->mode;
-    BLIZZARD_ASSERT(0 == (mode & ~Blizzard::File::Mode::nocache));
+    BC_ASSERT(0 == (mode & ~Blizzard::File::Mode::nocache));
     Blizzard::File::Flush(parms->file);
     return 0 == fcntl(parms->file->filefd, F_NOCACHE, mode & Blizzard::File::Mode::nocache);
 #endif

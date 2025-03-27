@@ -122,7 +122,7 @@ bool Delete(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
 
 bool Read(Blizzard::File::StreamRecord* file, void* data, int64_t offset, int32_t* count) {
     // file must be open to read
-    BLIZZARD_ASSERT(file != nullptr && file->filefd != -1);
+    BC_ASSERT(file != nullptr && file->filefd != -1);
 
     if (count == nullptr || *count == 0) {
         return true;
@@ -163,7 +163,7 @@ bool ReadP(Blizzard::File::Filesystem* fs, Stacked::FileParms* parms) {
 
 bool Write(Blizzard::File::StreamRecord* file, const void* data, int64_t offset, int32_t* count) {
     // file descriptor must be initialized
-    BLIZZARD_ASSERT(file != nullptr && file->filefd != -1);
+    BC_ASSERT(file != nullptr && file->filefd != -1);
 
     if (count == nullptr || *count == 0) {
         return true;
