@@ -4,7 +4,7 @@
 #include "bc/system/System_Debug.hpp"
 #include <cstdint>
 
-#if defined(WHOA_ASSERTIONS_ENABLED)
+#if defined(WHOA_BUILD_ASSERTIONS)
 #define BC_ASSERT(x)                               \
     if (!(x)) {                                          \
         Blizzard::Debug::Assert(#x, __FILE__, __LINE__); \
