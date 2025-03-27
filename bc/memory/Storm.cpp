@@ -2,6 +2,20 @@
 
 constexpr size_t ALIGNMENT = 8;
 
+void* operator new(size_t bytes) {
+    return SMemAlloc(bytes, "new", -1, 0x0);
+}
+
+void* operator new[](size_t bytes) {
+    return SMemAlloc(bytes, "new", -1, 0x0);
+}
+
+void operator delete(void* ptr) {
+    if (ptr) {
+        SMemFree(ptr, "delete", -1, 0x0);
+    }
+}
+
 void* SMemAlloc(size_t bytes, const char* filename, int32_t linenumber, uint32_t flags) {
     size_t alignedBytes = (bytes + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1);
 

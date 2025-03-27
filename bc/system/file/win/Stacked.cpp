@@ -1,21 +1,17 @@
-#include "bc/file/Defines.hpp"
 #if defined(WHOA_SYSTEM_WIN)
 
-#include "bc/system/file/Stacked.hpp"
-#include "bc/string/QuickFormat.hpp"
-#include "bc/File.hpp"
-#include "bc/Debug.hpp"
 #include "bc/Memory.hpp"
-#include "bc/String.hpp"
-#include "bc/Unicode.hpp"
-#include "bc/File.hpp"
-#include "bc/time/Time.hpp"
-#include "bc/memory/Storm.hpp"
-
-#include <algorithm>
-
 #include <windows.h>
 #include <sddl.h>
+
+#include "bc/File.hpp"
+#include "bc/system/file/Stacked.hpp"
+#include "bc/Debug.hpp"
+#include "bc/String.hpp"
+#include "bc/Unicode.hpp"
+#include "bc/time/Time.hpp"
+
+#include <algorithm>
 
 #include "bc/system/file/win/Support.hpp"
 
@@ -27,9 +23,9 @@
     high = static_cast<uint32_t>(qw >> 32); \
     low  = static_cast<uint32_t>(qw)
 
-#define BREAKFILEPOINTER(qw, high, low)  \
-     high = static_cast<LONG>(qw >> 32); \
-     low  = static_cast<LONG>(qw)
+#define BREAKFILEPOINTER(qw, high, low) \
+    high = static_cast<LONG>(qw >> 32); \
+    low  = static_cast<LONG>(qw)
 
 namespace System_File {
 
@@ -38,7 +34,7 @@ void FromNativeName(char* buffer, int32_t buffersize, const char* name) {
     uint16_t widenamebuffer[300];
     auto len      = name ? Blizzard::String::Length(name) : 0;
     auto widename = len + 1 > 300
-                        ? static_cast<uint16_t*>(Blizzard::Memory::Allocate(2 * (len + 1)))
+                        ? new uint16_t[2 * (len + 1)]
                         : widenamebuffer;
 
     widename[MultiByteToWideChar(CP_ACP, 0, name, len, reinterpret_cast<LPWSTR>(widename), len + 1)] = 0;
@@ -46,7 +42,7 @@ void FromNativeName(char* buffer, int32_t buffersize, const char* name) {
     Blizzard::Unicode::ConvertUTF16to8(reinterpret_cast<uint8_t*>(buffer), buffersize, widenamebuffer, 0xFFFFFFFF, nullptr, nullptr);
 
     if (widenamebuffer != widename) {
-        Blizzard::Memory::Free(widename);
+        delete widename;
     }
 }
 
@@ -152,13 +148,13 @@ void GetFileInfoByFile(Blizzard::File::StreamRecord* file) {
         WIN32_FILE_ATTRIBUTE_DATA fileinfo;
         if (::GetFileAttributesEx(PATH(file->name), GetFileExInfoStandard, &fileinfo)) {
 
-            info->createtime   = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
+            info->createtime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
             info->writetime  = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastWriteTime));
             info->accesstime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastAccessTime));
 
             info->attributes = FromNativeAttributes(fileinfo.dwFileAttributes);
 
-            info->normal = info->attributes & BC_FILE_ATTRIBUTE_NORMAL != 0;
+            info->normal = (info->attributes & BC_FILE_ATTRIBUTE_NORMAL) != 0;
 
             if (fileinfo.dwFileAttributes == 0xFFFFFFFF) {
                 info->filetype = 0;
@@ -209,7 +205,7 @@ bool Close(FileParms* parms) {
         ::CloseHandle(file->filehandle);
     }
 
-    SMemFree(file);
+    FREE(file);
     return true;
 }
 
@@ -314,7 +310,7 @@ bool GetFileInfo(FileParms* parms) {
 
         info->size = MAKEU64(fileinfo.nFileSizeHigh, fileinfo.nFileSizeLow);
 
-        info->createtime   = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
+        info->createtime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftCreationTime));
         info->writetime  = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastWriteTime));
         info->accesstime = Blizzard::Time::FromFileTime(MakeFileTime(fileinfo.ftLastAccessTime));
 
@@ -322,7 +318,7 @@ bool GetFileInfo(FileParms* parms) {
 
         info->attributes = FromNativeAttributes(fileinfo.dwFileAttributes);
 
-        info->normal = info->attributes & BC_FILE_ATTRIBUTE_NORMAL != 0;
+        info->normal = (info->attributes & BC_FILE_ATTRIBUTE_NORMAL) != 0;
 
         if (fileinfo.dwFileAttributes == 0xFFFFFFFF) {
             info->filetype = 0;
@@ -351,20 +347,15 @@ bool GetFreeSpace(FileParms* parms) {
         return false;
     }
 
-    auto pathchars = (Blizzard::String::FindFilename(name) + 1) - name;
-    if (pathchars > 260) {
-        pathchars = 260;
-    }
-
-    char path[260];
-    char shortpath[260];
-    Blizzard::String::Copy(path, name, pathchars);
+    char path[PATH_MAX];
+    char shortpath[PATH_MAX];
+    Blizzard::String::Copy(path, name, std::min(static_cast<int32_t>((Blizzard::String::FindFilename(name) + 1) - name), PATH_MAX));
 
     ULARGE_INTEGER freebytesavailable;
     ULARGE_INTEGER totalbytesavailable;
 
-    auto shortpathchars = ::GetShortPathName(PATH(path), shortpath, 260);
-    if (shortpathchars && shortpathchars < 260) {
+    auto shortpathchars = ::GetShortPathName(PATH(path), shortpath, PATH_MAX);
+    if (shortpathchars && shortpathchars < PATH_MAX) {
         if (!GetDiskFreeSpaceEx(shortpath, &freebytesavailable, &totalbytesavailable, nullptr)) {
             BC_FILE_SET_ERROR(8);
             return false;
@@ -403,7 +394,7 @@ bool GetPos(FileParms* parms) {
 bool GetRootChars(FileParms* parms) {
     char pathbuffer[256];
     auto pathsize = Blizzard::String::Length(parms->name) + 1;
-    auto path     = pathsize > 256 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(pathsize)) : pathbuffer;
+    auto path     = pathsize > 256 ? new char[pathsize] : pathbuffer;
 
     if (pathsize > 2) {
         Blizzard::String::MakeUnivPath(parms->name, path, pathsize);
@@ -417,7 +408,7 @@ bool GetRootChars(FileParms* parms) {
                 if (!cur) {
                     parms->offset = pathsize;
                     if (path != pathbuffer) {
-                        Blizzard::Memory::Free(path);
+                        delete path;
                     }
                     return true;
                 }
@@ -429,7 +420,7 @@ bool GetRootChars(FileParms* parms) {
     }
 
     if (path != pathbuffer) {
-        Blizzard::Memory::Free(path);
+        delete path;
     }
     return true;
 }
@@ -487,9 +478,9 @@ bool CreateDirectory(FileParms* parms) {
         return false;
     }
 
-    char pathbuffer[260];
+    char pathbuffer[PATH_MAX];
     auto pathsize = Blizzard::String::Length(parms->name) + 1;
-    auto path     = pathsize > 260 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(pathsize)) : pathbuffer;
+    auto path     = pathsize > PATH_MAX ? new char[pathsize] : pathbuffer;
 
     Blizzard::String::MakeBackslashPath(parms->name, path, pathsize);
 
@@ -502,21 +493,17 @@ bool CreateDirectory(FileParms* parms) {
     }
 
     if (parms->recurse) {
-        char leadingpath[260];
+        char leadingpath[PATH_MAX];
 
         for (auto s = path; *s && s < (s + Blizzard::String::Length(s)); s++) {
             while (*s && *s != '\\') {
                 s++;
             }
 
-            auto leadingpathsize = (s - path) + 2;
-            if (leadingpathsize > 260) {
-                leadingpathsize = 260;
-            }
-            if (Blizzard::String::Copy(leadingpath, path, leadingpathsize)) {
+            if (Blizzard::String::Copy(leadingpath, path, std::min(static_cast<int32_t>(s - path) + 2, PATH_MAX))) {
                 BC_FILE_SET_ERROR(8);
                 if (path != pathbuffer) {
-                    Blizzard::Memory::Free(path);
+                    delete path;
                 }
                 return false;
             }
@@ -532,7 +519,7 @@ bool CreateDirectory(FileParms* parms) {
 
                 if ((last_err != ERROR_ALREADY_EXISTS && last_err != ERROR_ACCESS_DENIED)) {
                     if (path != pathbuffer) {
-                        Blizzard::Memory::Free(path);
+                        delete path;
                     }
                     BC_FILE_SET_ERROR(8);
                     return false;
@@ -541,7 +528,7 @@ bool CreateDirectory(FileParms* parms) {
                 auto directoryattributes = GetFileAttributes(directorypath.ToString());
                 if (directoryattributes == INVALID_FILE_ATTRIBUTES || (directoryattributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
                     if (path != pathbuffer) {
-                        Blizzard::Memory::Free(path);
+                        delete path;
                     }
                     BC_FILE_SET_ERROR(8);
                     return false;
@@ -553,14 +540,14 @@ bool CreateDirectory(FileParms* parms) {
             auto last_err = ::GetLastError();
             bool result   = last_err == ERROR_ALREADY_EXISTS || last_err == ERROR_ACCESS_DENIED;
             if (path != pathbuffer) {
-                Blizzard::Memory::Free(path);
+                delete path;
             }
             return result;
         }
     }
 
     if (path != pathbuffer) {
-        Blizzard::Memory::Free(path);
+        delete path;
     }
     return true;
 }
@@ -608,9 +595,8 @@ bool Copy(FileParms* parms) {
         return false;
     }
 
-    auto size           = Blizzard::File::GetFileInfo(src)->size;
-    auto copybuffersize = size > BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size;
-    auto copybuffer     = Blizzard::Memory::Allocate(copybuffersize);
+    auto size   = Blizzard::File::GetFileInfo(src)->size;
+    auto buffer = ALLOC(size > BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size);
 
     int64_t offset = 0;
 
@@ -618,12 +604,12 @@ bool Copy(FileParms* parms) {
 
     while (offset < size) {
         auto count = static_cast<int32_t>(size - offset >= BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size - offset);
-        if (!Blizzard::File::Read(src, copybuffer, offset, &count)) {
+        if (!Blizzard::File::Read(src, buffer, offset, &count)) {
             result = false;
             break;
         }
 
-        if (!Blizzard::File::Write(dst, copybuffer, offset, &count)) {
+        if (!Blizzard::File::Write(dst, buffer, offset, &count)) {
             result = false;
             break;
         }
@@ -631,7 +617,7 @@ bool Copy(FileParms* parms) {
         offset += static_cast<int64_t>(count);
     }
 
-    Blizzard::Memory::Free(copybuffer);
+    FREE(buffer);
     Blizzard::File::Close(src);
     Blizzard::File::Close(dst);
     if (!result) {
@@ -675,13 +661,13 @@ bool Open(FileParms* parms) {
     if (file == nullptr) {
         // alloc(sizeof(StreamRecord) + len(name) + 1)
         // block of memory holds file as well as C string of the filename
-        auto namesize = Blizzard::String::Length(name);
-        file          = reinterpret_cast<Blizzard::File::StreamRecord*>(SMemAlloc(sizeof(Blizzard::File::StreamRecord) + 1 + namesize, __FILE__, __LINE__, 0x8));
+        auto namesize = Blizzard::String::Length(name) + 1;
+        file          = reinterpret_cast<Blizzard::File::StreamRecord*>(ALLOC_ZERO(sizeof(Blizzard::File::StreamRecord) + namesize));
         // set the name pointer inside of StreamRecord to point to the end of StreamRecord (i.e. the start of the name cstring in the memory block)
         auto filename = reinterpret_cast<char*>(file) + sizeof(Blizzard::File::StreamRecord);
         file->name    = filename;
         // copy name into memory block
-        Blizzard::String::Copy(filename, name, namesize + 1);
+        Blizzard::String::Copy(filename, name, namesize);
     }
 
     file->filehandle = filehandle;
@@ -707,15 +693,15 @@ bool RemoveDirectory(FileParms* parms) {
         return false;
     }
 
-    char namebuffer[260];
-    auto namesize = Blizzard::String::Length(parms->name);
-    auto name     = namesize > 260 ? reinterpret_cast<char*>(Blizzard::Memory::Allocate(namesize)) : namebuffer;
-    Blizzard::String::MakeBackslashPath(parms->name, name, 260);
+    char namebuffer[PATH_MAX];
+    auto namesize = Blizzard::String::Length(parms->name) + 1;
+    auto name     = namesize > PATH_MAX ? new char[namesize] : namebuffer;
+    Blizzard::String::MakeBackslashPath(parms->name, name, PATH_MAX);
 
     auto removed = ::RemoveDirectoryA(PATH(name));
 
     if (name != namebuffer) {
-        Blizzard::Memory::Free(name);
+        delete name;
     }
 
     return removed != 0;
@@ -762,6 +748,8 @@ bool SetEOF(FileParms* parms) {
 }
 
 bool SetAttributes(FileParms* parms) {
+    auto file = parms->file;
+
     if (parms->setinfo & BC_SYSTEM_FILE_INFO_TIMES) {
         auto info = parms->info;
 
@@ -769,7 +757,7 @@ bool SetAttributes(FileParms* parms) {
         auto lastaccesstime = BreakFileTime(Blizzard::Time::ToFileTime(info->accesstime));
         auto lastwritetime  = BreakFileTime(Blizzard::Time::ToFileTime(info->writetime));
 
-        if (!::SetFileTime(parms->file->filehandle, &createtime, &lastaccesstime, &lastwritetime)) {
+        if (!::SetFileTime(file->filehandle, &createtime, &lastaccesstime, &lastwritetime)) {
             BC_FILE_SET_ERROR(8);
             return false;
         }
@@ -778,7 +766,7 @@ bool SetAttributes(FileParms* parms) {
     }
 
     if (parms->setinfo & BC_SYSTEM_FILE_INFO_ATTRIBUTES) {
-        if (!::SetFileAttributes(PATH(parms->file->name), ToNativeAttributes(parms->info->attributes))) {
+        if (!::SetFileAttributes(PATH(file->name), ToNativeAttributes(parms->info->attributes))) {
             BC_FILE_SET_ERROR(8);
             return false;
         }
@@ -802,9 +790,7 @@ bool SetPos(FileParms* parms) {
     BREAKFILEPOINTER(parms->offset, distancetomovehigh, distancetomovelow);
 
     auto movemethod = static_cast<DWORD>(parms->whence);
-    if (movemethod > FILE_END) {
-        movemethod = FILE_END;
-    }
+    movemethod      = std::min(movemethod, static_cast<DWORD>(FILE_END));
 
     if (::SetFilePointer(file->filehandle, distancetomovelow, &distancetomovehigh, movemethod) == INVALID_SET_FILE_POINTER) {
         if (GetLastError()) {

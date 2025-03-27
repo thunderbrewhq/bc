@@ -2,13 +2,12 @@
 #include "bc/file/Defines.hpp"
 #if defined(WHOA_SYSTEM_LINUX) || defined(WHOA_SYSTEM_MAC)
 
-#include "bc/system/file/System_File.hpp"
-#include "bc/system/file/Stacked.hpp"
 #include "bc/Debug.hpp"
 #include "bc/File.hpp"
 #include "bc/Memory.hpp"
-#include "bc/memory/Storm.hpp"
 #include "bc/String.hpp"
+#include "bc/system/file/Stacked.hpp"
+#include "bc/system/file/System_File.hpp"
 #include "bc/system/file/posix/Support.hpp"
 #include <cerrno>
 #include <cstdio>
@@ -25,8 +24,8 @@
 #endif
 
 #if defined(WHOA_SYSTEM_MAC)
-#include <sys/param.h>
 #include <sys/mount.h>
+#include <sys/param.h>
 #endif
 
 #include <unistd.h>
@@ -55,7 +54,7 @@ bool Close(FileParms* parms) {
     BLIZZARD_ASSERT(file != nullptr);
 
     ::close(file->filefd);
-    SMemFree(file);
+    FREE(file);
 
     return true;
 }
@@ -327,7 +326,7 @@ bool IsReadOnly(FileParms* parms) {
 bool MakeAbsolutePath(FileParms* parms) {
     char namebuffer[BC_FILE_MAX_PATH];
     auto name = parms->buffersize > BC_FILE_MAX_PATH
-                    ? static_cast<char*>(Blizzard::Memory::Allocate(parms->buffersize))
+                    ? static_cast<char*>(ALLOC(parms->buffersize))
                     : namebuffer;
 
     *name = '\0';
@@ -338,7 +337,7 @@ bool MakeAbsolutePath(FileParms* parms) {
     Blizzard::String::Append(name, parms->name, parms->buffersize);
     char resultbuffer[BC_FILE_MAX_PATH];
     auto result = parms->buffersize > BC_FILE_MAX_PATH
-                      ? static_cast<char*>(Blizzard::Memory::Allocate(parms->buffersize))
+                      ? static_cast<char*>(ALLOC(parms->buffersize))
                       : resultbuffer;
     Blizzard::String::MakeUnivPath(name, result, parms->buffersize);
 
@@ -391,7 +390,7 @@ bool MakeAbsolutePath(FileParms* parms) {
         char canonicalbuffer[BC_FILE_MAX_PATH];
         char resolvedbuffer[BC_FILE_MAX_PATH];
         auto canonical = parms->buffersize > BC_FILE_MAX_PATH
-                             ? static_cast<char*>(Blizzard::Memory::Allocate(parms->buffersize))
+                             ? static_cast<char*>(ALLOC(parms->buffersize))
                              : canonicalbuffer;
         auto cur       = canonical;
 
@@ -405,7 +404,7 @@ bool MakeAbsolutePath(FileParms* parms) {
             auto v15 = (src + 1) - begin;
             Blizzard::String::Copy(cur, begin, v15 + 1);
 
-            auto resolved = parms->buffersize > BC_FILE_MAX_PATH ? static_cast<char*>(Blizzard::Memory::Allocate(parms->buffersize)) : resolvedbuffer;
+            auto resolved = parms->buffersize > BC_FILE_MAX_PATH ? static_cast<char*>(ALLOC(parms->buffersize)) : resolvedbuffer;
             if (::realpath(canonical, resolved)) {
                 Blizzard::String::Copy(canonical, resolved, parms->buffersize);
                 if (src[0] == '/' || src[0] == '\0' && src[-1] == '/') {
@@ -536,9 +535,8 @@ bool Copy(FileParms* parms) {
         return false;
     }
 
-    auto size           = Blizzard::File::GetFileInfo(src)->size;
-    auto copybuffersize = size > BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size;
-    auto copybuffer     = Blizzard::Memory::Allocate(copybuffersize);
+    auto size   = Blizzard::File::GetFileInfo(src)->size;
+    auto buffer = ALLOC(size > BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size);
 
     int64_t offset = 0;
 
@@ -546,12 +544,12 @@ bool Copy(FileParms* parms) {
 
     while (offset < size) {
         int32_t count = size - offset >= BC_SYSTEM_FILE_COPYBUFFER_SIZE ? BC_SYSTEM_FILE_COPYBUFFER_SIZE : size - offset;
-        if (!Blizzard::File::Read(src, copybuffer, offset, &count)) {
+        if (!Blizzard::File::Read(src, buffer, offset, &count)) {
             result = false;
             break;
         }
 
-        if (!Blizzard::File::Write(dst, copybuffer, offset, &count)) {
+        if (!Blizzard::File::Write(dst, buffer, offset, &count)) {
             result = false;
             break;
         }
@@ -559,7 +557,7 @@ bool Copy(FileParms* parms) {
         offset += static_cast<int64_t>(count);
     }
 
-    Blizzard::Memory::Free(copybuffer);
+    FREE(buffer);
     Blizzard::File::Close(src);
     Blizzard::File::Close(dst);
     if (result == false) {
@@ -622,10 +620,10 @@ bool Open(FileParms* parms) {
 
     if (System_File::s_EnableFileLocks) {
         if ((parms->mode & Blizzard::File::Mode::shareread) == 0 && (parms->mode & Blizzard::File::Mode::write) != 0) {
-                if (!LockFileDescriptorForWrite(filefd)) {
-                    return false;
-                }
+            if (!LockFileDescriptorForWrite(filefd)) {
+                return false;
             }
+        }
     }
 
     if (parms->mode & Blizzard::File::Mode::append) {
@@ -652,12 +650,11 @@ bool Open(FileParms* parms) {
     auto file = parms->file;
 
     if (!file) {
-        auto namelength = Blizzard::String::Length(name.ToString()) + 1;
-        file            = reinterpret_cast<Blizzard::File::StreamRecord*>(SMemAlloc(sizeof(Blizzard::File::StreamRecord) + namelength, __FILE__, __LINE__, 0x8));
+        auto namesize   = Blizzard::String::Length(name.ToString()) + 1;
+        file            = reinterpret_cast<Blizzard::File::StreamRecord*>(ALLOC_ZERO(sizeof(Blizzard::File::StreamRecord) + namesize));
         auto filename   = reinterpret_cast<char*>(file) + sizeof(Blizzard::File::StreamRecord);
         file->name      = filename;
-        Blizzard::String::Copy(filename, name.ToString(), namelength);
-
+        Blizzard::String::Copy(filename, name.ToString(), namesize);
     }
 
     file->filefd   = filefd;
@@ -763,8 +760,8 @@ bool SetAttributes(FileParms* parms) {
         }
 
         auto mode = parms->info->attributes & BC_FILE_ATTRIBUTE_READONLY
-            ? info.st_mode & (S_IFSOCK | S_IFLNK | S_IFIFO | S_ISUID | S_ISGID | S_ISVTX | 0555)
-            : info.st_mode | 0222;
+                        ? info.st_mode & (S_IFSOCK | S_IFLNK | S_IFIFO | S_ISUID | S_ISGID | S_ISVTX | 0555)
+                        : info.st_mode | 0222;
 
         if (::chmod(PATH(parms->name), mode) != 0) {
             BC_FILE_SET_ERROR(8);
