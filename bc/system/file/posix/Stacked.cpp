@@ -421,23 +421,23 @@ bool MakeAbsolutePath(FileParms* parms) {
             }
 
             if (resolved != resolvedbuffer) {
-                Blizzard::Memory::Free(resolved);
+                FREE(resolved);
             }
         }
 
         Blizzard::String::Copy(result, canonical, parms->buffersize);
         if (canonical != canonicalbuffer) {
-            Blizzard::Memory::Free(canonical);
+            FREE(canonical);
         }
     }
 
     Blizzard::String::Copy(parms->buffer, result, parms->buffersize);
 
     if (name != namebuffer) {
-        Blizzard::Memory::Free(name);
+        FREE(name);
     }
     if (result != resultbuffer) {
-        Blizzard::Memory::Free(result);
+        FREE(result);
     }
 
     return *parms->buffer != '\0';
