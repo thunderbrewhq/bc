@@ -530,7 +530,7 @@ bool Copy(FileParms* parms) {
         return false;
     }
 
-    if (!Blizzard::File::Open(name, Blizzard::File::Mode::write | (parms->overwrite ? Blizzard::File::Mode::create : Blizzard::File::Mode::create | Blizzard::File::Mode::mustnotexist), dst)) {
+    if (!Blizzard::File::Open(newname, Blizzard::File::Mode::write | (parms->overwrite ? Blizzard::File::Mode::create : Blizzard::File::Mode::create | Blizzard::File::Mode::mustnotexist), dst)) {
         BC_FILE_SET_ERROR(4); // TODO: find out what 4 is
         return false;
     }
