@@ -613,7 +613,6 @@ bool Open(FileParms* parms) {
 
     auto filefd = flags & O_CREAT ? ::open(name.ToString(), flags, 0777) : ::open(name.ToString(), flags);
     if (filefd == -1) {
-        printf("opened? '%s'\n", name.ToString());
         BC_FILE_SET_ERROR_MSG(8, "Posix Open - %s", name.ToString());
         return false;
     }

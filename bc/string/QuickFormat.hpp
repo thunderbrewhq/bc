@@ -18,7 +18,6 @@ class QuickFormat {
             va_list args;
             va_start(args, format);
             VFormat(this->buffer, N, format, args);
-            printf("QI %d '%s', '%s'\n", N, format, this->buffer);
         }
 
         const char* ToString() {
