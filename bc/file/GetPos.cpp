@@ -14,7 +14,7 @@ bool GetPos(StreamRecord* file, int64_t& offset) {
     parms.whence = BC_FILE_SEEK_CURRENT;
 
     auto fs = System_File::Stacked::s_manager;
-    if (!fs || !fs->setpos(fs, &parms)) {
+    if (!fs || !fs->getpos(fs, &parms)) {
         return false;
     }
     offset = parms.offset;
