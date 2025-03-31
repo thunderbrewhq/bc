@@ -504,7 +504,7 @@ bool CreateDirectory(FileParms* parms) {
                 s++;
             }
 
-            if (Blizzard::String::Copy(leadingpath, path, std::min(static_cast<int32_t>(s - path) + 2, MAX_PATH))) {
+            if (Blizzard::String::Copy(leadingpath, path, std::min(static_cast<int32_t>(s - path) + 2, MAX_PATH)) >= MAX_PATH) {
                 BC_FILE_SET_ERROR(8);
                 if (path != pathbuffer) {
                     delete path;
