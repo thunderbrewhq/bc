@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <algorithm>
 
 #if defined(WHOA_SYSTEM_LINUX)
 #include <sys/vfs.h>
@@ -461,11 +462,11 @@ bool CreateDirectory(FileParms* parms) {
                 path++;
             }
 
-            auto length = path - name;
-            Blizzard::String::Copy(dir, name, length < BC_FILE_MAX_PATH ? length : BC_FILE_MAX_PATH);
+            auto length = std::max(static_cast<int32_t>(path - name), 1);
+            Blizzard::String::Copy(dir, name, length < BC_FILE_MAX_PATH ? length + 1 : BC_FILE_MAX_PATH);
 
             if (!Blizzard::File::IsDirectory(dir)) {
-                if (::mkdir(parms->name, 0777) != 0) {
+                if (::mkdir(dir, 0777) != 0) {
                     return false;
                 }
             }
