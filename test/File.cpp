@@ -27,4 +27,42 @@ TEST_CASE("Blizzard::File::Open", "[file]") {
     }
 }
 
+TEST_CASE("Blizzard::File::CreateDirectory", "[file]") {
+    SECTION("create nested directory") {
+        REQUIRE(Blizzard::File::CreateDirectory("/tmp/whoabc/nested/testing/directory", true));
+        REQUIRE(Blizzard::File::CreateDirectory("./whoabc/nested/testing/directory", true));
+    }
+}
+
+#endif
+
+#if defined(WHOA_SYSTEM_WIN)
+
+#include <cstdio>
+#include <windows.h>
+
+#undef CreateDirectory
+
+TEST_CASE("Blizzard::File::Open", "[file]") {
+    SECTION("open nul") {
+        Blizzard::File::StreamRecord* file;
+        REQUIRE(Blizzard::File::Open("nul", Blizzard::File::Mode::mustexist|Blizzard::File::Mode::read, file));
+        REQUIRE(Blizzard::File::Close(file));
+    }
+}
+
+TEST_CASE("Blizzard::File::CreateDirectory", "[file]") {
+    SECTION("create nested directory") {
+        CHAR tempdir[1024];
+        if (GetTempPathA(sizeof(tempdir), tempdir)) {
+            char dir[1024];
+            Blizzard::String::Copy(dir, tempdir, sizeof(dir));
+            Blizzard::String::ForceTrailingSeparator(dir, sizeof(dir), '\\');
+            Blizzard::String::Append(dir, "whoabc\\nested\\testing\\directory", sizeof(dir));
+            REQUIRE(Blizzard::File::CreateDirectory(dir, true));
+        }
+        REQUIRE(Blizzard::File::CreateDirectory("./whoabc/nested/testing/directory", true));
+    }
+}
+
 #endif
