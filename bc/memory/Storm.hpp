@@ -11,7 +11,7 @@
 #define FREE(ptr)        SMemFree(ptr, __FILE__, __LINE__, 0x0)
 
 #define NEW(T, ...)      (new (SMemAlloc(sizeof(T), __FILE__, __LINE__, 0)) T(__VA_ARGS__))
-#define NEW_ZERO(T, ...) (new (SMemAlloc(sizeof(T), __FILE__, __LINE__, 0x8) T(__VA_ARGS__))
+#define NEW_ZERO(T, ...) (new (SMemAlloc(sizeof(T), __FILE__, __LINE__, 0x8)) T(__VA_ARGS__))
 #define DEL(ptr)                                                                               \
     do {                                                                                       \
         if (ptr) {                                                                             \
