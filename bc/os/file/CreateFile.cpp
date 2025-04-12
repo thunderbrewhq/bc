@@ -7,7 +7,7 @@
 int32_t OsCreateFileMode(uint32_t desiredAccess, uint32_t shareMode, uint32_t createDisposition) {
     using Mode = Blizzard::File::Mode;
 
-    int32_t mode;
+    int32_t mode = 0;
 
     if (desiredAccess & OS_GENERIC_READ) {
         mode |= Mode::read;
