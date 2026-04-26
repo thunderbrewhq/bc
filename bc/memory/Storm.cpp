@@ -1,5 +1,7 @@
 #include "bc/memory/Storm.hpp"
 
+#include <cstring>
+
 constexpr size_t ALIGNMENT = 8;
 
 void* operator new(size_t bytes) {
@@ -35,6 +37,18 @@ void* SMemAlloc(size_t bytes, const char* filename, int32_t linenumber, uint32_t
     }
 }
 
+int SMemCmp(void* ptrA, void* ptrB, size_t bytes) {
+    return memcmp(ptrA, ptrB, bytes);
+}
+
+void SMemCopy(void* dst, void* src, size_t bytes) {
+    memmove(dst, src, bytes);
+}
+
+void SMemFill(void* ptr, size_t bytes, uint8_t value) {
+    memset(ptr, value, bytes);
+}
+
 void SMemFree(void* ptr) {
     if (ptr) {
         free(ptr);
@@ -45,6 +59,10 @@ void SMemFree(void* ptr, const char* filename, int32_t linenumber, uint32_t flag
     if (ptr) {
         free(ptr);
     }
+}
+
+void SMemMove(void* dst, void* src, size_t bytes) {
+    memmove(dst, src, bytes);
 }
 
 void* SMemReAlloc(void* ptr, size_t bytes, const char* filename, int32_t linenumber, uint32_t flags) {
@@ -76,5 +94,12 @@ void* SMemReAlloc(void* ptr, size_t bytes, const char* filename, int32_t linenum
         }
 
         return nullptr;
+    }
+}
+
+void SMemZero(void* ptr, size_t bytes) {
+    uint8_t* ptrdata = static_cast<uint8_t*>(ptr);
+    for (size_t i = 0; i < bytes; i++) {
+        ptrdata[i] = 0;
     }
 }
